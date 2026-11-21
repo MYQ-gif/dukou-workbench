@@ -26,6 +26,7 @@
       <button data-tab="ledger" class="tab">记账</button>
       <button data-tab="api" class="tab">接口</button>
     </nav>
+    <button id="btnWarehouse" class="btn ghost wh-btn">仓库 <span id="whCount" class="badge-num">0</span></button>
   </header>
 
   <!-- 生图：对话框 -->
@@ -38,6 +39,19 @@
           <input id="file" type="file" accept="image/*" hidden>
           <span>＋ 图片</span>
         </label>
+        <div class="pf-wrap">
+          <button id="btnPlatform" class="select pf-btn" type="button">
+            <span id="pfChip" class="pf-chip" style="background:#ee4d2d">S</span>
+            <span id="pfName">Shopee</span>
+            <span class="caret">▾</span>
+          </button>
+          <div id="pfMenu" class="pf-menu hidden">
+            <div class="pf-group">国内平台</div>
+            <div id="pfDomestic" class="pf-items"></div>
+            <div class="pf-group">海外平台</div>
+            <div id="pfOverseas" class="pf-items"></div>
+          </div>
+        </div>
         <select id="template" class="select">
           <option value="main">主图</option>
           <option value="marketing">营销图</option>
@@ -117,6 +131,19 @@
     </div>
     <div id="endpoints" class="endpoints"></div>
   </section>
+  <!-- 仓库：生成出来的图和文案都落在这儿 -->
+  <div id="whMask" class="wh-mask hidden"></div>
+  <aside id="wh" class="wh hidden">
+    <div class="wh-head">
+      <h3>仓库</h3>
+      <div class="wh-tabs">
+        <button data-wh="image" class="wh-tab active">图片 <span id="whImgNum">0</span></button>
+        <button data-wh="copy" class="wh-tab">文案 <span id="whCopyNum">0</span></button>
+      </div>
+      <button id="whClose" class="link">关闭</button>
+    </div>
+    <div id="whBody" class="wh-body"></div>
+  </aside>
 </main>
 
 <dialog id="dlg">
@@ -126,10 +153,14 @@
     <label>卖点（逗号分隔）<input id="newPoints" placeholder="实木手工, 老料新做"></label>
     <label>平台
       <select id="newPlatform">
-        <option value="shopee">Shopee</option>
+        <option value="taobao">淘宝</option>
+        <option value="xianyu">闲鱼</option>
+        <option value="jd">京东</option>
+        <option value="amazon">Amazon</option>
+        <option value="ebay">eBay</option>
+        <option value="shopee" selected>Shopee</option>
         <option value="lazada">Lazada</option>
         <option value="tiktok">TikTok Shop</option>
-        <option value="amazon">Amazon</option>
       </select>
     </label>
     <label>原始描述 <textarea id="newRaw" rows="3" placeholder="把客户会看到的那段话粘贴进来"></textarea></label>

@@ -48,14 +48,30 @@
 {
   "id": "a_1",
   "productId": "p_8f2a",
-  "kind": "upload | main | detail | video | subtitle",
+  "kind": "upload | main | marketing | detail | copy | video | subtitle",
   "url": "/files/abc.jpg",
   "width": 1242,
   "height": 1660,
-  "meta": { "model": "mock-image-v1", "lang": "en" },
+  "meta": { "model": "mock-image-v1", "lang": "en", "platform": "shopee" },
   "createdAt": "…"
 }
 ```
+
+**平台枚举 `platform`**（出图规格按它定，仓库图标按它显示）：
+
+| id | 名字 | 区域 | 出图尺寸 |
+|----|------|------|----------|
+| taobao | 淘宝 | 国内 | 800×800 |
+| xianyu | 闲鱼 | 国内 | 800×800 |
+| jd | 京东 | 国内 | 800×800 |
+| amazon | Amazon | 海外 | 2000×2000 |
+| ebay | eBay | 海外 | 1600×1600 |
+| shopee | Shopee | 海外 | 1242×1660 |
+| lazada | Lazada | 海外 | 1000×1000 |
+| tiktok | TikTok Shop | 海外 | 1080×1920 |
+
+**文案产物也走 Asset**：`kind: "copy"`，`url` 为 `null`，正文在 `meta` 里
+（`title / bullets[] / detail / lang / platform / model`）。前端「仓库 → 文案」直接读它。
 
 ### Job（异步任务：出图 / 视频 / 文案）
 
@@ -204,4 +220,5 @@
 
 | 日期 | 版本 | 变更 | 提出人 |
 |------|------|------|--------|
+| 2026-11-21 | v1.1 | `platform` 扩到 8 个平台并决定出图尺寸；文案产物存成 `kind=copy` 的 Asset 进仓库 | 主人 |
 | 2026-11-21 | v1 | 首版冻结 | 主人 |

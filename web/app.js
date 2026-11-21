@@ -3,7 +3,20 @@
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-const state = { products: [], current: null, tab: 'image', lastUpload: null, video: null };
+const state = { products: [], current: null, tab: 'image', lastUpload: null, video: null, platform: 'shopee', whTab: 'image' };
+
+/* 平台表：和 lib/ai.mjs 的 PLATFORMS 保持一致（id / 名字 / 规格 / 图标色） */
+const PLATFORMS = [
+  { id: 'taobao', name: '淘宝', region: 'domestic', w: 800, h: 800, color: '#ff5000', short: '淘' },
+  { id: 'xianyu', name: '闲鱼', region: 'domestic', w: 800, h: 800, color: '#f5c518', short: '闲' },
+  { id: 'jd', name: '京东', region: 'domestic', w: 800, h: 800, color: '#e1251b', short: '京' },
+  { id: 'amazon', name: 'Amazon', region: 'overseas', w: 2000, h: 2000, color: '#ff9900', short: 'A' },
+  { id: 'ebay', name: 'eBay', region: 'overseas', w: 1600, h: 1600, color: '#0064d2', short: 'e' },
+  { id: 'shopee', name: 'Shopee', region: 'overseas', w: 1242, h: 1660, color: '#ee4d2d', short: 'S' },
+  { id: 'lazada', name: 'Lazada', region: 'overseas', w: 1000, h: 1000, color: '#0f146d', short: 'L' },
+  { id: 'tiktok', name: 'TikTok Shop', region: 'overseas', w: 1080, h: 1920, color: '#111111', short: 'T' },
+];
+const pf = (id) => PLATFORMS.find((p) => p.id === id) || PLATFORMS.find((p) => p.id === 'shopee');
 
 /* ---------------- API ---------------- */
 
@@ -41,13 +54,127 @@ async function loadProducts(preferId) {
 async function selectProduct(id) {
   state.current = await api(`/api/products/${id}`);
   const p = state.current;
+  if (p.platform) setPlatform(p.platform, false);
   $('#pMeta').textContent = [
-    p.platform,
+    pf(p.platform).name,
     (p.targetLangs || []).join(' / '),
-    `${(p.assets || []).filter((a) => a.kind !== 'upload').length} 张图`,
+    `${(p.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy').length} 张图`,
   ].join(' · ');
   chatReset();
   loadLedger();
+  renderWarehouse();
+}
+
+/* ---------------- 平台选择 ---------------- */
+
+function setPlatform(id, remember = true) {
+  const p = pf(id);
+  state.platform = p.id;
+  $('#pfName').textContent = p.name;
+  const chip = $('#pfChip');
+  chip.textContent = p.short;
+  chip.style.background = p.color;
+  chip.style.color = ['#f5c518', '#ff9900', '#f2c14e'].includes(p.color) ? '#1a1a1a' : '#fff';
+  $$('#pfMenu .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.pf === p.id));
+  if (remember && state.current && state.current.platform !== p.id) {
+    api(`/api/products/${state.current.id}`, { method: 'PATCH', body: { platform: p.id } }).catch(() => {});
+    state.current.platform = p.id;
+    $('#pMeta').textContent = $('#pMeta').textContent.replace(/^.*? · /, `${p.name} · `);
+  }
+}
+
+function buildPlatformMenu() {
+  const item = (p) => `<button class="pf-item" data-pf="${p.id}" type="button">
+      <span class="pf-chip" style="background:${p.color};color:${['#f5c518', '#ff9900', '#f2c14e'].includes(p.color) ? '#1a1a1a' : '#fff'}">${p.short}</span>
+      <span class="pf-label">${p.name}</span>
+      <span class="pf-size">${p.w}×${p.h}</span>
+    </button>`;
+  $('#pfDomestic').innerHTML = PLATFORMS.filter((p) => p.region === 'domestic').map(item).join('');
+  $('#pfOverseas').innerHTML = PLATFORMS.filter((p) => p.region === 'overseas').map(item).join('');
+  setPlatform(state.platform, false);
+}
+
+/* ---------------- 仓库 ---------------- */
+
+function whAssets() {
+  const assets = state.current?.assets || [];
+  return {
+    images: assets.filter((a) => a.kind !== 'upload' && a.kind !== 'copy'),
+    copies: assets.filter((a) => a.kind === 'copy'),
+  };
+}
+
+function renderWarehouse() {
+  const { images, copies } = whAssets();
+  $('#whCount').textContent = images.length + copies.length;
+  $('#whImgNum').textContent = images.length;
+  $('#whCopyNum').textContent = copies.length;
+  $$('.wh-tab').forEach((t) => t.classList.toggle('active', t.dataset.wh === state.whTab));
+
+  const body = $('#whBody');
+  if (!state.current) {
+    body.innerHTML = '<p class="muted">还没有商品。新建一个，图和文案会攒在这里。</p>';
+    return;
+  }
+  if (state.whTab === 'image') {
+    if (!images.length) {
+      body.innerHTML = '<p class="muted">还没有图。回「生图」发一句，出来的图会自动进这里。</p>';
+      return;
+    }
+    body.innerHTML = `<div class="wh-grid">${images
+      .slice()
+      .reverse()
+      .map(
+        (a) => `<figure class="wh-item">
+          <img src="${a.url}" alt="" data-open="${a.url}">
+          <figcaption>${esc(a.meta?.template || a.kind)} · ${a.width}×${a.height}
+            <span class="muted">${esc(pf(a.meta?.platform).name)}</span></figcaption>
+        </figure>`
+      )
+      .join('')}</div>`;
+    body.querySelectorAll('[data-open]').forEach((img) => {
+      img.onclick = () => window.open(img.dataset.open, '_blank');
+    });
+  } else {
+    if (!copies.length) {
+      body.innerHTML = '<p class="muted">还没有文案。输入框下面点「只要文案」，生成后进这里。</p>';
+      return;
+    }
+    body.innerHTML = copies
+      .slice()
+      .reverse()
+      .map(
+        (a) => `<article class="wh-copy">
+          <div class="wh-copy-head">
+            <span class="tag">${esc(a.meta?.lang || 'EN')} · ${esc(pf(a.meta?.platform).name)}</span>
+            <button class="link" data-copy="${a.id}">复制全文</button>
+          </div>
+          <h4>${esc(a.meta?.title || '(无标题)')}</h4>
+          <ul>${(a.meta?.bullets || []).map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+          <p>${esc(a.meta?.detail || '')}</p>
+        </article>`
+      )
+      .join('');
+    body.querySelectorAll('[data-copy]').forEach((btn) => {
+      btn.onclick = async () => {
+        const a = copies.find((x) => x.id === btn.dataset.copy);
+        const text = [a.meta?.title, ...(a.meta?.bullets || []), a.meta?.detail].filter(Boolean).join('\n');
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = '已复制';
+          setTimeout(() => (btn.textContent = '复制全文'), 1200);
+        } catch {
+          btn.textContent = '复制失败';
+        }
+      };
+    });
+  }
+}
+
+function whOpen(open) {
+  $('#wh').classList.toggle('hidden', !open);
+  $('#whMask').classList.toggle('hidden', !open);
+  if (open) renderWarehouse();
 }
 
 /* ---------------- 对话 ---------------- */
@@ -57,16 +184,14 @@ function chatReset() {
   box.innerHTML = '<div class="chat-inner"></div>';
   const inner = box.querySelector('.chat-inner');
   const p = state.current;
-  const done = (p?.assets || []).filter((a) => a.kind !== 'upload');
-  const el = say(
+  say(
     inner,
     'ai',
-    `<p>${p ? `「${esc(p.title)}」已经就位。` : '先点右上角「新建商品」，我再开始给你做图。'}</p>
-     <p>发一张商品原图，选好模板和语言，点发送——我出套图。也可以直接在输入框里提要求。</p>
-     ${done.length ? '<h3>已有素材</h3>' : ''}`
+    `<p>${p ? `「${esc(p.title)}」已经就位。` : '先点上方「新建商品」，我再开始给你做图。'}</p>
+     <p>发一张商品原图，选平台、模板和语言，点发送——我出套图。也可以直接在输入框里提要求。</p>
+     <p class="muted-sm">出好的图和文案会落进右上角的「仓库」，随时翻。</p>`
   );
-  if (done.length) shots(el.querySelector('.bubble'), done);
-  inner.scrollIntoView({ block: 'end' });
+  box.scrollTop = box.scrollHeight;
 }
 
 function say(container, who, html) {
@@ -149,24 +274,25 @@ async function doImage(askText) {
   const before = new Set((state.current.assets || []).map((a) => a.id));
   const tpl = $('#template').value;
   const lang = $('#imgLang').value;
+  const platformId = state.platform;
 
   const thumb = state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : '';
-  const userEl = say(inner, 'user', `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p style="opacity:.85;font-size:12px">${tplLabel(tpl)} · ${langLabel(lang)}</p>`);
-  void userEl;
+  say(inner, 'user', `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p class="meta-line">${esc(pf(platformId).name)} · ${tplLabel(tpl)} · ${langLabel(lang)}</p>`);
 
   const box = progressBubble('正在出图…');
   try {
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
-      body: { type: 'image', productId: state.current.id, params: { assetId: state.lastUpload, platform: state.current.platform, template: tpl, lang, prompt: askText || undefined } },
+      body: { type: 'image', productId: state.current.id, params: { assetId: state.lastUpload, platform: platformId, template: tpl, lang, prompt: askText || undefined } },
     });
     const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
     state.current = await api(`/api/products/${state.current.id}`);
-    const fresh = (state.current.assets || []).filter((a) => a.kind !== 'upload' && !before.has(a.id));
-    const bubble = say(inner, 'ai', `<p>${fresh.length ? `出好了 ${fresh.length} 张。` : '任务完成。'}</p>`);
+    const fresh = (state.current.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy' && !before.has(a.id));
+    const bubble = say(inner, 'ai', `<p>${fresh.length ? `出好了 ${fresh.length} 张，已放进仓库。` : '任务完成。'}</p>`);
     if (fresh.length) shots(bubble.querySelector('.bubble'), fresh);
-    $('#pMeta').textContent = $('#pMeta').textContent.replace(/\d+ 张图/, `${(state.current.assets || []).filter((a) => a.kind !== 'upload').length} 张图`);
+    $('#pMeta').textContent = $('#pMeta').textContent.replace(/\d+ 张图/, `${(state.current.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy').length} 张图`);
+    if (state.whTab === 'image') renderWarehouse(); else renderWarehouse();
     state.lastUpload = null;
     state.lastUploadPreview = null;
     $('#attachInfo').textContent = '未附图片';
@@ -179,16 +305,19 @@ async function doImage(askText) {
 async function doCopy() {
   if (!state.current) return $('#dlg').showModal();
   const inner = $('#chat .chat-inner');
-  say(inner, 'user', '<p>只要文案</p>');
+  say(inner, 'user', `<p>只要文案 · ${esc(pf(state.platform).name)}</p>`);
   const box = progressBubble('正在写文案…');
   try {
-    const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'copy', productId: state.current.id, params: { lang: $('#imgLang').value } } });
+    const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'copy', productId: state.current.id, params: { lang: $('#imgLang').value, platform: state.platform } } });
     const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
     say(inner, 'ai', `
       <h3>标题</h3><p>${esc(result.title || '')}</p>
       <h3>卖点</h3><ul>${(result.bullets || []).map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
-      <h3>详情</h3><p>${esc(result.detail || '')}</p>`);
+      <h3>详情</h3><p>${esc(result.detail || '')}</p>
+      <p class="muted-sm">已存进仓库 →</p>`);
+    state.current = await api(`/api/products/${state.current.id}`);
+    renderWarehouse();
   } catch (e) {
     box.done();
     say(inner, 'ai', `<p style="color:#f27e4c">失败：${esc(e.message)}</p>`);
@@ -372,6 +501,38 @@ $('#btnLedger').onclick = async () => {
 
 $('#btnPing').onclick = pingAll;
 
+/* 平台下拉 */
+$('#btnPlatform').onclick = (ev) => {
+  ev.stopPropagation();
+  $('#pfMenu').classList.toggle('hidden');
+};
+$('#pfMenu').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.pf-item');
+  if (!btn) return;
+  setPlatform(btn.dataset.pf);
+  $('#pfMenu').classList.add('hidden');
+});
+document.addEventListener('click', (ev) => {
+  if (!ev.target.closest('.pf-wrap')) $('#pfMenu').classList.add('hidden');
+});
+
+/* 仓库 */
+$('#btnWarehouse').onclick = () => whOpen($('#wh').classList.contains('hidden'));
+$('#whClose').onclick = () => whOpen(false);
+$('#whMask').onclick = () => whOpen(false);
+$('.wh-tabs').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.wh-tab');
+  if (!btn) return;
+  state.whTab = btn.dataset.wh;
+  renderWarehouse();
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') {
+    whOpen(false);
+    $('#pfMenu').classList.add('hidden');
+  }
+});
+
 function esc(s) {
   return String(s ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
 }
@@ -380,6 +541,7 @@ function esc(s) {
 
 (async function boot() {
   renderEndpoints();
+  buildPlatformMenu();
   const hash = location.hash.replace('#', '');
   if (['image', 'video', 'ledger', 'api'].includes(hash)) switchTab(hash);
   try {

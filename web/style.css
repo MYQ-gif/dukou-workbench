@@ -83,6 +83,7 @@ html, body {
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
 
 /* 按钮 */
+.hidden { display: none !important; }
 .btn {
   background: #fff; color: var(--ink); border: 1px solid var(--line);
   padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 13px;
@@ -90,6 +91,8 @@ html, body {
 .btn:hover { border-color: var(--cyan); color: var(--blue); }
 .btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
 .btn.primary:hover { background: #175f94; color: #fff; }
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: #fff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .link {
@@ -246,9 +249,85 @@ dialog input, dialog select, dialog textarea {
 }
 dialog menu { display: flex; justify-content: flex-end; gap: 8px; margin: 20px 0 0; padding: 0; }
 
+/* 平台下拉 + 仓库 */
+
+.wh-btn { margin-left: 10px; display: inline-flex; align-items: center; gap: 6px; }
+.badge-num {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--navy); color: #fff; font-size: 11px; line-height: 18px; text-align: center;
+}
+
+.pf-wrap { position: relative; }
+.pf-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.pf-chip {
+  width: 18px; height: 18px; border-radius: 5px; display: inline-flex;
+  align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff;
+  flex: 0 0 auto;
+}
+.pf-btn .caret { color: var(--ink-3); font-size: 10px; }
+.pf-menu {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 30;
+  width: 250px; padding: 8px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(10, 46, 92, .12);
+}
+.pf-group { font-size: 11px; color: var(--ink-3); padding: 6px 8px 4px; letter-spacing: .04em; }
+.pf-item {
+  width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 8px;
+  background: none; border: 0; border-radius: 7px; cursor: pointer; font: inherit; font-size: 13px; color: var(--ink);
+}
+.pf-item:hover { background: #f2ede2; }
+.pf-item.on { background: #e8f1f8; }
+.pf-label { flex: 1; text-align: left; }
+.pf-size { color: var(--ink-3); font-size: 11px; }
+
+.wh-mask { position: fixed; inset: 0; background: rgba(10, 46, 92, .18); z-index: 40; }
+.wh {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 92vw; z-index: 41;
+  background: var(--card); border-left: 1px solid var(--line);
+  display: flex; flex-direction: column;
+}
+.wh-head {
+  display: flex; align-items: center; gap: 12px; padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.wh-head h3 { margin: 0; font-size: 15px; color: var(--navy); }
+.wh-tabs { display: flex; gap: 6px; margin-left: auto; }
+.wh-tab {
+  border: 1px solid var(--line); background: #fff; color: var(--ink-2);
+  padding: 4px 10px; border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer;
+}
+.wh-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.wh-tab span { opacity: .7; margin-left: 2px; }
+.wh-body { flex: 1; overflow: auto; padding: 16px 18px 40px; }
+
+.wh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.wh-item { margin: 0; }
+.wh-item img {
+  width: 100%; border-radius: 8px; border: 1px solid var(--line);
+  display: block; cursor: zoom-in; background: #faf7f1;
+}
+.wh-item figcaption { font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+
+.wh-copy {
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+}
+.wh-copy-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.wh-copy h4 { margin: 0 0 8px; font-size: 13px; color: var(--navy); }
+.wh-copy ul { margin: 0 0 8px; padding-left: 16px; font-size: 12px; color: var(--ink-2); }
+.wh-copy p { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+.tag {
+  font-size: 11px; color: var(--ink-2); background: #eef3f7;
+  border-radius: 4px; padding: 2px 6px; letter-spacing: .02em;
+}
+
+.meta-line { opacity: .85; font-size: 12px; }
+.muted-sm { color: var(--ink-3); font-size: 12px; }
+
 @media (max-width: 720px) {
   .topbar { flex-direction: column; gap: 8px; padding: 14px 16px 0; }
   .panel, .chat, .composer { padding-left: 16px; padding-right: 16px; }
   .bubble { max-width: 88%; }
   .shots { grid-template-columns: 1fr; }
+  .wh { width: 100%; }
 }
