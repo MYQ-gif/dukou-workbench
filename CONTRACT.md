@@ -172,12 +172,18 @@
 
 ```json
 { "type": "image", "productId": "p_8f2a",
-  "params": { "assetId": "a_1", "platform": "shopee", "template": "main", "lang": "en" } }
+  "params": { "assetId": "a_1", "platform": "shopee", "template": "main", "lang": "en",
+              "count": 2, "width": null, "height": null, "quality": "1k" } }
 ```
 
 - `type=image`：`params.template ∈ main|marketing|detail|sub`，`params.lang`
+  - `params.count` 1–6，默认 main/marketing 2 张、detail 3 张
+  - `params.width` / `params.height` 基准像素，`null` 表示跟平台规格走（200–4000）
+  - `params.quality ∈ 1k|2k|4k`，输出尺寸 = 基准 × (1 / 1.5 / 2)
 - `type=video`：`params.assetId`（视频文件 asset），`params.targetLang`
 - `type=copy`：`params.lang`，可选 `params.style`
+
+> 这三个参数由前端「出图参数询问框」给出，默认值按模板与平台预选，用户可改。
 
 返回 202：
 

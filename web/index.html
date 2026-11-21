@@ -155,6 +155,49 @@
   <div id="whBody" class="wh-body"></div>
 </aside>
 
+<!-- 出图前问一句：几张、多大、多清晰。常用项都在，最后一格留给自定义 -->
+<dialog id="askDlg" class="dlg">
+  <form method="dialog" class="dlg-form">
+    <h2>确认出图参数</h2>
+    <p class="dlg-sub" id="dlgSub">这张图要出成什么样，三句话定完。</p>
+
+    <div class="opt">
+      <div class="opt-label">要几张<span class="opt-hint" id="cntHint">按模板默认</span></div>
+      <div class="opt-row" id="optCount">
+        <button type="button" class="chip" data-count="1">1 张</button>
+        <button type="button" class="chip on" data-count="2">2 张<span class="tag">常用</span></button>
+        <button type="button" class="chip" data-count="3">3 张</button>
+        <button type="button" class="chip" data-count="5">5 张</button>
+        <span class="custom">自定义 <input id="cntCustom" type="number" min="1" max="6" placeholder="4"></span>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-label">尺寸<span class="opt-hint" id="sizeHint">默认跟平台规格走</span></div>
+      <div class="opt-row" id="optSize">
+        <button type="button" class="chip on" data-size="platform" id="chipPlatform">平台默认</button>
+        <button type="button" class="chip" data-size="800x800">方图 1:1 <span class="dim">800×800</span></button>
+        <button type="button" class="chip" data-size="1080x1920">竖屏 9:16 <span class="dim">1080×1920</span></button>
+        <span class="custom">自定义 <input id="wCustom" type="number" min="200" max="4000" placeholder="1242">×<input id="hCustom" type="number" min="200" max="4000" placeholder="1660"></span>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-label">清晰度<span class="opt-hint">按平台要求选，主流平台 1K 就够</span></div>
+      <div class="opt-row" id="optQuality">
+        <button type="button" class="chip on" data-quality="1k">标准 1K<span class="tag">够用</span></button>
+        <button type="button" class="chip" data-quality="2k">高清 2K</button>
+        <button type="button" class="chip" data-quality="4k">超清 4K</button>
+      </div>
+    </div>
+
+    <div class="dlg-foot">
+      <button type="button" class="link" id="dlgCancel">取消</button>
+      <button type="submit" class="btn-primary" id="dlgGo">开始生成</button>
+    </div>
+  </form>
+</dialog>
+
 <script type="module" src="/app.js"></script>
 </body>
 </html>

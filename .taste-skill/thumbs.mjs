@@ -1,0 +1,12 @@
+const CDP = process.env.CDP || 'http://127.0.0.1:9334';
+const list = await (await fetch(`${CDP}/json/list`)).json();
+const page = list.find((t) => t.type === 'page' && /localhost:8787/.test(t.url));
+const ws = new WebSocket(page.webSocketDebuggerUrl);
+await new Promise((r) => (ws.onopen = r));
+let id = 0; const pending = new Map();
+ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } };
+const send = (method, params = {}) => new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true, awaitPromise: true })).result?.result?.value;
+console.log(await ev(`[...document.querySelectorAll('#chat img')].slice(-3).map(i => i.className + ' ' + Math.round(i.getBoundingClientRect().width) + ' css=' + getComputedStyle(i).width + ' maxw=' + getComputedStyle(i).maxWidth).join('\\n')`));
+console.log('chatScroll', await ev(`(() => { const c = document.querySelector('#chat'); return c.scrollWidth + 'x' + c.clientWidth; })()`));
+ws.close();

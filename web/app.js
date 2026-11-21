@@ -340,7 +340,84 @@ function jobPromise(jobId, onTick) {
   });
 }
 
-async function doImage(askText) {
+/* ---------------- 出图参数询问框 ---------------- */
+
+const dlgState = { count: 2, size: 'platform', quality: '1k' };
+
+function sizeLabel() {
+  if (dlgState.size === 'platform') {
+    const p = pf(state.platform);
+    return `${p.name} ${p.w}×${p.h}`;
+  }
+  if (dlgState.size === 'custom') {
+    const w = Number($('#wCustom').value) || pf(state.platform).w;
+    const h = Number($('#hCustom').value) || pf(state.platform).h;
+    return `自定义 ${w}×${h}`;
+  }
+  return dlgState.size.replace('x', '×');
+}
+
+function syncDlg() {
+  $$('#optCount .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.count) === dlgState.count && !$('#cntCustom').value));
+  $$('#optSize .chip').forEach((c) => c.classList.toggle('on', c.dataset.size === dlgState.size));
+  $$('#optQuality .chip').forEach((c) => c.classList.toggle('on', c.dataset.quality === dlgState.quality));
+  const p = pf(state.platform);
+  $('#chipPlatform').innerHTML = `平台默认 <span class="dim">${p.w}×${p.h}</span>`;
+  $('#wCustom').placeholder = String(p.w);
+  $('#hCustom').placeholder = String(p.h);
+  $('#sizeHint').textContent = `当前：${sizeLabel()}`;
+  $('#cntHint').textContent = `将出 ${dlgState.count} 张 · ${dlgState.quality.toUpperCase()}`;
+}
+
+/** 打开询问框；确认后把 opts 交给回调 */
+function askParams({ title, thumb, onSubmit }) {
+  const dlg = $('#askDlg');
+  dlgState.count = $('#template').value === 'detail' ? 3 : 2;
+  dlgState.size = 'platform';
+  dlgState.quality = '1k';
+  $('#cntCustom').value = '';
+  $('#wCustom').value = '';
+  $('#hCustom').value = '';
+  $('#dlgSub').innerHTML = `${esc(title || '')}${thumb ? `<img class="dlg-thumb" src="${thumb}" alt="">` : ''}`;
+  syncDlg();
+
+  const done = (ok) => {
+    dlg.removeEventListener('close', onClose);
+    $('#dlgGo').onclick = null;
+    $('#dlgCancel').onclick = null;
+    if (!ok) return;
+    const base = pf(state.platform);
+    const [w, h] = dlgState.size === 'platform' ? [null, null] : dlgState.size === 'custom' ? [Number($('#wCustom').value) || base.w, Number($('#hCustom').value) || base.h] : dlgState.size.split('x').map(Number);
+    onSubmit({
+      count: Number($('#cntCustom').value) || dlgState.count,
+      width: w,
+      height: h,
+      quality: dlgState.quality,
+    });
+  };
+  const onClose = () => done(dlg.returnValue === 'go');
+  dlg.addEventListener('close', onClose);
+  $('#dlgCancel').onclick = () => dlg.close('cancel');
+  $('#dlgGo').onclick = (ev) => { ev.preventDefault(); dlg.close('go'); };
+
+  $$('#optCount .chip').forEach((c) => (c.onclick = () => { dlgState.count = Number(c.dataset.count); $('#cntCustom').value = ''; syncDlg(); }));
+  $$('#optSize .chip').forEach((c) => (c.onclick = () => { dlgState.size = c.dataset.size; $('#wCustom').value = ''; $('#hCustom').value = ''; syncDlg(); }));
+  $$('#optQuality .chip').forEach((c) => (c.onclick = () => { dlgState.quality = c.dataset.quality; syncDlg(); }));
+  $('#cntCustom').oninput = () => syncDlg();
+  for (const id of ['#wCustom', '#hCustom']) {
+    $(id).oninput = () => {
+      if ($('#wCustom').value || $('#hCustom').value) dlgState.size = 'custom';
+      syncDlg();
+    };
+  }
+
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+  else dlg.setAttribute('open', '');
+}
+
+const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
+
+async function doImage(askText, opts) {
   const text = String(askText || '').trim();
   if (!state.current && !text && !state.lastUpload) {
     say($('#chat .chat-inner'), 'ai', '<p>先发张图，或者直接说要做什么，比如「新建商品：老榆木餐桌」。</p>');
@@ -352,15 +429,27 @@ async function doImage(askText) {
   const tpl = $('#template').value;
   const lang = $('#imgLang').value;
   const platformId = state.platform;
+  const count = opts?.count || (tpl === 'detail' ? 3 : 2);
+  const width = opts?.width || null;
+  const height = opts?.height || null;
+  const quality = opts?.quality || '1k';
+  const scale = { '1k': 1, '2k': 1.5, '4k': 2 }[quality] || 1;
+  const base = pf(platformId);
+  const outW = Math.round((width || base.w) * scale);
+  const outH = Math.round((height || base.h) * scale);
 
   const thumb = state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : '';
-  say(inner, 'user', `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p class="meta-line">${esc(pf(platformId).name)} · ${tplLabel(tpl)} · ${langLabel(lang)}</p>`);
+  say(
+    inner,
+    'user',
+    `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p class="meta-line">${esc(base.name)} · ${tplLabel(tpl)} · ${langLabel(lang)} · ${count} 张 · ${outW}×${outH} · ${quality.toUpperCase()}</p>`
+  );
 
   const box = progressBubble('正在出图…');
   try {
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
-      body: { type: 'image', productId: state.current.id, params: { assetId: state.lastUpload, platform: platformId, template: tpl, lang, prompt: askText || undefined } },
+      body: { type: 'image', productId: state.current.id, params: { assetId: state.lastUpload, platform: platformId, template: tpl, lang, count, width, height, quality, prompt: askText || undefined } },
     });
     const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
@@ -525,8 +614,18 @@ $('#chat').addEventListener('click', (ev) => {
   $('#ask').setSelectionRange($('#ask').value.length, $('#ask').value.length);
 });
 
-$('#btnSend').onclick = () => {  const ask = $('#ask').value.trim();
+$('#btnSend').onclick = () => {
+  const ask = $('#ask').value.trim();
   $('#ask').value = '';
+  // 有图，或者话里明显是在要图 → 先问清几张/多大/多清晰
+  if (state.lastUpload || IMAGE_WORDS.test(ask) || !ask) {
+    askParams({
+      title: state.current ? state.current.title : '新商品',
+      thumb: state.lastUploadPreview,
+      onSubmit: (opts) => doImage(ask, opts),
+    });
+    return;
+  }
   doImage(ask);
 };
 

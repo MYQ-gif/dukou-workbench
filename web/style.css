@@ -386,3 +386,45 @@ input.ctl::placeholder { color: #9aa0a8; }
 }
 .starter:hover { border-color: var(--link); color: var(--link); }
 .starter:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+/* ---------- 出图参数询问框 ---------- */
+.dlg {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  width: min(520px, calc(100vw - 32px));
+  color: var(--ink);
+  background: var(--sheet);
+}
+.dlg::backdrop { background: rgba(10, 46, 92, 0.18); }
+.dlg-form { padding: 22px 24px 18px; }
+.dlg h2 { font-size: 18px; margin: 0 0 4px; }
+.dlg-sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+.opt { margin-bottom: 16px; }
+.opt-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; align-items: baseline; }
+.opt-hint { font-weight: 400; font-size: 12px; color: var(--muted); }
+.opt-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip {
+  font: inherit; font-size: 13px; color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 999px;
+  padding: 7px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip:hover { border-color: var(--link); }
+.chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.chip.on .tag { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.chip.on .dim { color: rgba(255, 255, 255, 0.7); }
+.chip .tag { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: #eef4f8; color: var(--link); }
+.chip .dim { font: 11px var(--mono); color: var(--muted); }
+.custom { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.custom input {
+  width: 66px; font: inherit; font-size: 13px; color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 5px 8px; background: #fdfcf9;
+}
+.custom input:focus { outline: 2px solid var(--link); outline-offset: 1px; }
+.dlg-foot { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 22px; }
+.dlg-thumb { width: 34px; height: 34px; object-fit: cover; border-radius: 5px; border: 1px solid var(--rule); vertical-align: middle; margin-left: 8px; }
+
+/* 用户气泡里的原图缩略图 */
+.thumb { display: block; width: 120px; height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid var(--rule); margin: 6px 0 2px; }
+.msg.user .thumb { margin-left: auto; }
+.bubble img { max-width: 100%; }
