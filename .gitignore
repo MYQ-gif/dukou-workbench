@@ -1,0 +1,10 @@
+# 运行时数据与本地密钥，不进仓库
+data/
+.env
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

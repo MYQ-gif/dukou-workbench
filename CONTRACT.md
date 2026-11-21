@@ -1,0 +1,207 @@
+# CONTRACT · 渡口 (Dukou) API 契约 v1
+
+> 冻结时间：2026-11-21。**任何人要改这份文件，必须先开 PR 说明原因，三人同意后才能改。**
+> 前端、后端、AI 链路都以本文件为唯一事实来源。
+
+## 0. 通用约定
+
+- Base URL 本地：`http://localhost:8787`；线上：待定（部署后写进这里）
+- 所有请求/响应 `Content-Type: application/json`，上传接口除外
+- 时间一律 ISO 8601 字符串（`2026-12-05T10:00:00.000Z`）
+- id 一律字符串（服务端生成，前端不要自己造）
+- 错误统一返回：
+
+```json
+{ "error": { "code": "NOT_FOUND", "message": "product not found" } }
+```
+
+错误码：`BAD_REQUEST` `NOT_FOUND` `PAYLOAD_TOO_LARGE` `RATE_LIMITED` `INTERNAL`
+
+- 分页参数：`?limit=20&cursor=<id>`，返回 `{ "items": [...], "nextCursor": "…" | null }`
+
+## 1. 数据模型
+
+### Product（商品，全站主键）
+
+```json
+{
+  "id": "p_8f2a",
+  "title": "手作家具 / 餐桌",
+  "category": "furniture",
+  "platform": "shopee",
+  "targetLangs": ["en", "th"],
+  "sellingPoints": ["实木手工", "老料新做"],
+  "rawText": "老爸给奶奶手做的桌子…",
+  "status": "draft | ready | listed",
+  "assets": ["a_1", "a_2"],
+  "createdAt": "…",
+  "updatedAt": "…"
+}
+```
+
+> 注意：`GET /api/products/:id` 返回的 `assets` 是**完整 Asset 对象数组**（服务端已展开），
+> 而列表接口 `GET /api/products` 里的 `assets` 仍是 id 数组。前端按详情接口渲染即可。
+
+### Asset（素材/产物）
+
+```json
+{
+  "id": "a_1",
+  "productId": "p_8f2a",
+  "kind": "upload | main | detail | video | subtitle",
+  "url": "/files/abc.jpg",
+  "width": 1242,
+  "height": 1660,
+  "meta": { "model": "mock-image-v1", "lang": "en" },
+  "createdAt": "…"
+}
+```
+
+### Job（异步任务：出图 / 视频 / 文案）
+
+```json
+{
+  "id": "j_31c9",
+  "type": "image | video | copy",
+  "productId": "p_8f2a",
+  "status": "queued | running | done | failed | canceled",
+  "progress": 0,
+  "result": { },
+  "error": null,
+  "createdAt": "…",
+  "updatedAt": "…"
+}
+```
+
+- `type=image` → result: `{ "assets": ["a_2","a_3"] }`
+- `type=video` → result: `{ "videoUrl": "/files/x.mp4", "subtitles": [{ "start": 0.0, "end": 2.4, "text": "…" }], "lang": "en" }`
+- `type=copy` → result: `{ "title": "…", "bullets": ["…"], "detail": "…", "lang": "en" }`
+
+### LedgerEntry（账目）
+
+```json
+{
+  "id": "l_77",
+  "productId": "p_8f2a",
+  "type": "income | cost | fee | shipping | ads | refund",
+  "amount": 128.5,
+  "currency": "CNY",
+  "note": "首单",
+  "occurredAt": "2026-12-05T09:00:00.000Z"
+}
+```
+
+## 2. 接口清单（10 个）
+
+| # | 方法 | 路径 | 说明 |
+|---|------|------|------|
+| 1 | GET | `/api/health` | 健康检查 |
+| 2 | POST | `/api/products` | 建商品 |
+| 3 | GET | `/api/products` | 商品列表 |
+| 4 | GET | `/api/products/:id` | 商品详情（含 assets） |
+| 5 | PATCH | `/api/products/:id` | 更新商品字段 |
+| 6 | POST | `/api/uploads` | 上传原始图（raw body） |
+| 7 | POST | `/api/jobs` | 建异步任务 |
+| 8 | GET | `/api/jobs/:id` | 查任务进度/结果 |
+| 9 | POST | `/api/ledger` | 记一笔账 |
+| 10 | GET | `/api/ledger` | 账目列表 + 汇总 |
+
+### 1) GET /api/health
+
+```json
+{ "ok": true, "version": "1.0.0", "aiMode": "mock | live" }
+```
+
+### 2) POST /api/products
+
+请求：
+
+```json
+{ "title": "手作家具 / 餐桌", "category": "furniture", "platform": "shopee",
+  "targetLangs": ["en"], "sellingPoints": ["实木手工"], "rawText": "…" }
+```
+
+必填：`title`。其余可选。返回 201 + Product。
+
+### 3) GET /api/products
+
+`?limit=20&cursor=…` → `{ items: Product[], nextCursor }`
+
+### 4) GET /api/products/:id
+
+返回 `{ ...Product, assets: Asset[] }`。不存在 → 404 `NOT_FOUND`。
+
+### 5) PATCH /api/products/:id
+
+只允许改 `title / category / platform / targetLangs / sellingPoints / rawText / status`。
+返回更新后的 Product。写入 `updatedAt`。
+
+### 6) POST /api/uploads
+
+- Header：`Content-Type: image/jpeg|image/png|image/webp`，`X-Filename: a.jpg`
+- Body：图片原始字节（≤ 15 MB，超出 → 413 `PAYLOAD_TOO_LARGE`）
+- 可选 `?productId=p_8f2a` 自动挂到商品 assets
+
+返回 201：
+
+```json
+{ "assetId": "a_1", "url": "/files/9f2c.jpg", "width": 1242, "height": 1660 }
+```
+
+> 前端约定：**直传 raw body，不要 multipart**，实现简单且不会踩边界问题。
+
+### 7) POST /api/jobs
+
+请求：
+
+```json
+{ "type": "image", "productId": "p_8f2a",
+  "params": { "assetId": "a_1", "platform": "shopee", "template": "main", "lang": "en" } }
+```
+
+- `type=image`：`params.template ∈ main|marketing|detail|sub`，`params.lang`
+- `type=video`：`params.assetId`（视频文件 asset），`params.targetLang`
+- `type=copy`：`params.lang`，可选 `params.style`
+
+返回 202：
+
+```json
+{ "jobId": "j_31c9", "status": "queued" }
+```
+
+### 8) GET /api/jobs/:id
+
+返回 Job。前端每 1.5 s 轮询一次，`status` 为 `done/failed/canceled` 时停止。
+
+### 9) POST /api/ledger
+
+```json
+{ "productId": "p_8f2a", "type": "income", "amount": 128.5, "currency": "CNY", "note": "首单" }
+```
+
+返回 201 + LedgerEntry（服务端补 `id` / `occurredAt`）。
+
+### 10) GET /api/ledger
+
+`?productId=p_8f2a&limit=50` →
+
+```json
+{ "items": [LedgerEntry], "summary": { "income": 128.5, "cost": 40, "profit": 88.5, "currency": "CNY" } }
+```
+
+## 3. 静态资源
+
+- `GET /files/*` → `data/uploads/` 下的文件
+- `GET /` → `web/index.html`（同目录静态文件全部可访问）
+
+## 4. 前端不得依赖的东西
+
+- 不得直接调用任何模型 API（key 不进前端）
+- 不得假设接口支持 WebSocket（v1 只有轮询）
+- 不得在 URL 里传 token
+
+## 5. 变更记录
+
+| 日期 | 版本 | 变更 | 提出人 |
+|------|------|------|--------|
+| 2026-11-21 | v1 | 首版冻结 | 主人 |
