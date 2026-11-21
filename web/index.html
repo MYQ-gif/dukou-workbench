@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <button id="btnNew" class="btn primary wide">+ 新建商品</button>
+    <button id="btnNew" class="btn side-in wide">+ 新建商品</button>
 
     <div class="side-label">商品 <span id="count">0</span></div>
     <ul id="list" class="products"></ul>
@@ -35,12 +35,18 @@
       </div>
       <nav class="tabs" id="tabs">
         <button data-tab="image" class="tab active">套图</button>
-        <button data-tab="copy" class="tab">文案</button>
         <button data-tab="video" class="tab">视频翻译</button>
-        <button data-tab="ledger" class="tab">账本</button>
+        <button data-tab="ledger" class="tab">记账</button>
+        <button data-tab="api" class="tab">接口</button>
       </nav>
     </header>
 
+    <div id="job" class="jobbar hidden">
+      <span id="jobText">任务进行中…</span>
+      <div class="bar"><i id="jobBar"></i></div>
+    </div>
+
+    <!-- 套图：主人负责（主功能） -->
     <section class="panel" data-panel="image">
       <div class="row">
         <label class="upload">
@@ -58,38 +64,44 @@
           <option value="vi">越南语</option>
         </select>
         <button id="btnImage" class="btn primary">生成套图</button>
+        <button id="btnCopy" class="btn">生成文案</button>
       </div>
+
       <div id="assets" class="grid"></div>
-      <p id="imgHint" class="hint">上传一张图，选好平台与语言，点生成。</p>
+      <p id="imgHint" class="hint">上传一张图 → 选模板与语言 → 生成。出图约 30–90 秒。</p>
+
+      <div id="copyOut" class="copy-out" style="margin-top:26px"></div>
     </section>
 
-    <section class="panel hidden" data-panel="copy">
-      <div class="row">
-        <select id="copyLang" class="select">
-          <option value="en">英语</option>
-          <option value="th">泰语</option>
-          <option value="vi">越南语</option>
-        </select>
-        <button id="btnCopy" class="btn primary">生成文案</button>
-      </div>
-      <div id="copyOut" class="copy-out"></div>
-    </section>
-
+    <!-- 视频翻译：马负责 -->
     <section class="panel hidden" data-panel="video">
       <div class="row">
         <label class="upload">
           <input id="vfile" type="file" accept="video/*" hidden>
-          <span>上传视频</span>
+          <span>选择视频</span>
         </label>
+        <span id="vMeta" class="muted">未选择文件 · 建议 60 秒以内、15MB 以下</span>
         <select id="vLang" class="select">
           <option value="en">英语</option>
           <option value="th">泰语</option>
+          <option value="vi">越南语</option>
         </select>
         <button id="btnVideo" class="btn primary">翻译字幕</button>
       </div>
-      <div id="videoOut" class="copy-out"></div>
+
+      <div id="videoOut" class="copy-out">
+        <h3>这一步做什么</h3>
+        <div>保留原声、把视频里的中文换成目标语言，并生成对应字幕。卖点讲解、开箱、桌面实拍这类口播素材，一条视频要发多个市场时最省事。</div>
+        <h3>边界（先讲清楚，免得演示翻车）</h3>
+        <ul>
+          <li>做：语音识别 → 翻译 → 字幕轨 → 可选 TTS 配音轨</li>
+          <li>不做：口型同步（lip sync）、原声音色克隆</li>
+          <li>处理时长：1 分钟视频约 40–90 秒，走异步任务 + 轮询</li>
+        </ul>
+      </div>
     </section>
 
+    <!-- 记账：主人负责 -->
     <section class="panel hidden" data-panel="ledger">
       <div class="row">
         <select id="lType" class="select">
@@ -101,24 +113,29 @@
           <option value="refund">退款</option>
         </select>
         <input id="lAmount" class="input" type="number" placeholder="金额" step="0.01">
-        <input id="lNote" class="input wide" placeholder="备注">
+        <input id="lNote" class="input wide" placeholder="备注（比如：首单 / 海运 / 广告投放）">
         <button id="btnLedger" class="btn primary">记一笔</button>
       </div>
       <div id="summary" class="stats"></div>
       <ul id="ledgerList" class="ledger"></ul>
     </section>
 
-    <div id="job" class="jobbar hidden">
-      <span id="jobText">任务进行中…</span>
-      <div class="bar"><i id="jobBar"></i></div>
-    </div>
+    <!-- 接口：卓负责 -->
+    <section class="panel hidden" data-panel="api">
+      <p class="hint" style="margin:0 0 14px">契约见 <code>CONTRACT.md</code>。这张表就是卓要实现的全部范围，点「自测」会真打一遍。</p>
+      <div class="row">
+        <button id="btnPing" class="btn">自测全部接口</button>
+        <span id="pingResult" class="muted"></span>
+      </div>
+      <div id="endpoints" class="endpoints"></div>
+    </section>
   </main>
 </div>
 
 <dialog id="dlg">
   <form method="dialog">
     <h2>新建商品</h2>
-    <label>商品名 <input id="newTitle" required placeholder="手作家具 / 餐桌"></label>
+    <label>商品名 <input id="newTitle" required placeholder="老榆木餐桌"></label>
     <label>卖点（逗号分隔）<input id="newPoints" placeholder="实木手工, 老料新做"></label>
     <label>平台
       <select id="newPlatform">
