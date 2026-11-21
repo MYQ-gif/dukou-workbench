@@ -7,39 +7,50 @@
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<main class="main">
-  <header class="topbar">
-    <div class="left">
-      <span class="mark">渡</span>
-      <div>
-        <div class="brand-name">渡口 <span class="brand-sub">一人做跨境的工作台</span></div>
-        <div class="prod-line">
-          <select id="prodSel" class="select bare"></select>
-          <span id="pMeta" class="muted"></span>
-        </div>
-      </div>
-    </div>
-    <nav class="tabs" id="tabs">
-      <button data-tab="image" class="tab active">生图</button>
-      <button data-tab="video" class="tab">视频翻译</button>
-      <button data-tab="ledger" class="tab">记账</button>
-      <button data-tab="api" class="tab">接口</button>
-    </nav>
-    <button id="btnWarehouse" class="btn ghost wh-btn">仓库 <span id="whCount" class="badge-num">0</span></button>
-  </header>
+<!-- 外框：只有一条顶栏，不上阴影不上分隔线 -->
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">渡</span>
+    <span class="brand-name">渡口</span>
+    <span class="brand-sub">一人做跨境的工作台</span>
+  </div>
+  <div class="prod-switch">
+    <select id="prodSel" aria-label="切换商品"></select>
+  </div>
+  <div class="topbar-right">
+    <button id="btnWarehouse" class="btn-warehouse" type="button">
+      仓库 <span id="whCount" class="count">0</span>
+    </button>
+    <span id="health" class="health">检查服务…</span>
+  </div>
+</header>
 
-  <!-- 生图：对话框 -->
+<!-- 白纸：工作区落在纸上，纸只比外框低一个色阶 -->
+<main class="sheet">
+  <div class="screen-head">
+    <h1 id="hTitle">渡口</h1>
+    <p id="pMeta" class="meta">发张图或说句话就开始</p>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="image" class="tab active" type="button">生图</button>
+    <button data-tab="video" class="tab" type="button">视频翻译</button>
+    <button data-tab="ledger" class="tab" type="button">记账</button>
+    <button data-tab="api" class="tab" type="button">接口</button>
+  </nav>
+
+  <!-- 生图：一条对话就是全部操作 -->
   <section class="panel chatpanel" data-panel="image">
     <div id="chat" class="chat"></div>
 
     <div class="composer">
       <div class="composer-row">
-        <label class="upload">
+        <label class="btn-attach">
           <input id="file" type="file" accept="image/*" hidden>
           <span>＋ 图片</span>
         </label>
         <div class="pf-wrap">
-          <button id="btnPlatform" class="select pf-btn" type="button">
+          <button id="btnPlatform" class="ctl pf-btn" type="button">
             <span id="pfChip" class="pf-chip" style="background:#ee4d2d">S</span>
             <span id="pfName">Shopee</span>
             <span class="caret">▾</span>
@@ -51,25 +62,23 @@
             <div id="pfOverseas" class="pf-items"></div>
           </div>
         </div>
-        <select id="template" class="select">
+        <select id="template" class="ctl" aria-label="模板">
           <option value="main">主图</option>
           <option value="marketing">营销图</option>
           <option value="detail">详情页</option>
         </select>
-        <select id="imgLang" class="select">
+        <select id="imgLang" class="ctl" aria-label="语言">
           <option value="en">英语</option>
           <option value="th">泰语</option>
           <option value="vi">越南语</option>
         </select>
-        <input id="ask" class="input wide" placeholder="说说要什么，比如：白底主图，标题写 SIT DOWN. STAY A WHILE.">
-        <button id="btnSend" class="btn primary">发送</button>
+        <input id="ask" class="ctl grow" placeholder="说说要什么，比如：白底主图，标题写 SIT DOWN. STAY A WHILE.">
+        <button id="btnSend" class="btn-primary" type="button">发送</button>
       </div>
       <div class="composer-hint">
-        <span id="attachInfo" class="muted">未附图片</span>
-        <span class="muted">·</span>
-        <button id="btnCopy" class="link">只要文案</button>
-        <span class="grow"></span>
-        <span id="health" class="dot">检查服务…</span>
+        <span id="attachInfo">未附图片</span>
+        <span class="sep">·</span>
+        <button id="btnCopy" class="link" type="button">只要文案</button>
       </div>
     </div>
   </section>
@@ -77,27 +86,27 @@
   <!-- 视频翻译：马负责 -->
   <section class="panel hidden" data-panel="video">
     <div class="row">
-      <label class="upload">
+      <label class="btn-attach">
         <input id="vfile" type="file" accept="video/*" hidden>
         <span>选择视频</span>
       </label>
-      <span id="vMeta" class="muted">未选择文件 · 建议 60 秒以内、15MB 以下</span>
-      <select id="vLang" class="select">
+      <span id="vMeta" class="note">未选择文件 · 建议 60 秒以内、15MB 以下</span>
+      <select id="vLang" class="ctl" aria-label="目标语言">
         <option value="en">英语</option>
         <option value="th">泰语</option>
         <option value="vi">越南语</option>
       </select>
-      <button id="btnVideo" class="btn primary">翻译字幕</button>
+      <button id="btnVideo" class="btn-primary" type="button">翻译字幕</button>
     </div>
 
-    <div id="videoOut" class="copy-out">
-      <h3>这一步做什么</h3>
-      <div>保留原声、把视频里的中文换成目标语言，并生成对应字幕。卖点讲解、开箱、桌面实拍这类口播素材，一条视频要发多个市场时最省事。</div>
-      <h3>边界（先讲清楚，免得演示翻车）</h3>
+    <div id="videoOut" class="prose">
+      <h2>这一步做什么</h2>
+      <p>保留原声、把视频里的中文换成目标语言，并生成对应字幕。卖点讲解、开箱、桌面实拍这类口播素材，一条视频要发多个市场时最省事。</p>
+      <h2>边界</h2>
       <ul>
         <li>做：语音识别 → 翻译 → 字幕轨 → 可选 TTS 配音轨</li>
         <li>不做：口型同步（lip sync）、原声音色克隆</li>
-        <li>处理时长：1 分钟视频约 40–90 秒，走异步任务 + 轮询</li>
+        <li>耗时：1 分钟视频约 40–90 秒，走异步任务 + 轮询</li>
       </ul>
     </div>
   </section>
@@ -105,7 +114,7 @@
   <!-- 记账：主人负责 -->
   <section class="panel hidden" data-panel="ledger">
     <div class="row">
-      <select id="lType" class="select">
+      <select id="lType" class="ctl" aria-label="类型">
         <option value="income">收入</option>
         <option value="cost">成本</option>
         <option value="fee">平台费</option>
@@ -113,9 +122,9 @@
         <option value="ads">广告</option>
         <option value="refund">退款</option>
       </select>
-      <input id="lAmount" class="input" type="number" placeholder="金额" step="0.01">
-      <input id="lNote" class="input wide" placeholder="备注（比如：首单 / 海运 / 广告投放）">
-      <button id="btnLedger" class="btn primary">记一笔</button>
+      <input id="lAmount" class="ctl" type="number" placeholder="金额" step="0.01" inputmode="decimal">
+      <input id="lNote" class="ctl grow" placeholder="备注，比如：首单 / 海运 / 广告投放">
+      <button id="btnLedger" class="btn-primary" type="button">记一笔</button>
     </div>
     <div id="summary" class="stats"></div>
     <ul id="ledgerList" class="ledger"></ul>
@@ -123,27 +132,28 @@
 
   <!-- 接口：卓负责 -->
   <section class="panel hidden" data-panel="api">
-    <p class="hint" style="margin:0 0 14px">契约见 <code>CONTRACT.md</code>。这张表就是卓要实现的全部范围，点「自测」会真打一遍。</p>
+    <p class="note">契约见 <code>CONTRACT.md</code>。下面就是卓要实现的全部范围，点「自测」会真打一遍。</p>
     <div class="row">
-      <button id="btnPing" class="btn">自测全部接口</button>
-      <span id="pingResult" class="muted"></span>
+      <button id="btnPing" class="ctl" type="button">自测全部接口</button>
+      <span id="pingResult" class="note"></span>
     </div>
     <div id="endpoints" class="endpoints"></div>
   </section>
-  <!-- 仓库：生成出来的图和文案都落在这儿 -->
-  <div id="whMask" class="wh-mask hidden"></div>
-  <aside id="wh" class="wh hidden">
-    <div class="wh-head">
-      <h3>仓库</h3>
-      <div class="wh-tabs">
-        <button data-wh="image" class="wh-tab active">图片 <span id="whImgNum">0</span></button>
-        <button data-wh="copy" class="wh-tab">文案 <span id="whCopyNum">0</span></button>
-      </div>
-      <button id="whClose" class="link">关闭</button>
-    </div>
-    <div id="whBody" class="wh-body"></div>
-  </aside>
 </main>
+
+<!-- 仓库：生成出来的图和文案都落在这儿 -->
+<div id="whMask" class="wh-mask hidden"></div>
+<aside id="wh" class="wh hidden" aria-label="仓库">
+  <div class="wh-head">
+    <h2>仓库</h2>
+    <div class="wh-tabs">
+      <button data-wh="image" class="wh-tab active" type="button">图片 <span id="whImgNum">0</span></button>
+      <button data-wh="copy" class="wh-tab" type="button">文案 <span id="whCopyNum">0</span></button>
+    </div>
+    <button id="whClose" class="link" type="button">关闭</button>
+  </div>
+  <div id="whBody" class="wh-body"></div>
+</aside>
 
 <script type="module" src="/app.js"></script>
 </body>

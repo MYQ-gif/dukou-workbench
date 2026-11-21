@@ -42,6 +42,7 @@ async function loadProducts(preferId) {
     : '<option value="">还没有商品</option>';
   if (!items.length) {
     state.current = null;
+    $('#hTitle').textContent = '还没有商品';
     $('#pMeta').textContent = '发张图或说句话就开始';
     chatReset();
     return;
@@ -55,6 +56,7 @@ async function selectProduct(id) {
   state.current = await api(`/api/products/${id}`);
   const p = state.current;
   if (p.platform) setPlatform(p.platform, false);
+  $('#hTitle').textContent = p.title;
   $('#pMeta').textContent = [
     pf(p.platform).name,
     (p.targetLangs || []).join(' / '),
@@ -189,9 +191,49 @@ function chatReset() {
     'ai',
     `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没商品，直接发图或者说话就行，我会自动开一个。'}</p>
      <p>选好平台，发一张商品原图再说要求——我出套图。想换商品就说「新建商品：名字」。</p>
-     <p class="muted-sm">出好的图和文案会落进右上角的「仓库」，随时翻。</p>`
+     <p class="muted-sm">出好的图和文案会落进右上角的「仓库」，随时翻。</p>`,
+    { persist: false }
   );
+  for (const m of loadHistory()) say(inner, m.who, m.html, { persist: false });
+  if (!loadHistory().length && p) {
+    say(
+      inner,
+      'ai',
+      `<p class="muted-sm">没想好怎么开口，先点一句，改改再发：</p>
+       <div class="starters">
+         <button class="starter" data-fill="做一张白底主图，标题写 STAY A WHILE.">白底主图 + 一句英文标题</button>
+         <button class="starter" data-fill="按这套家具出一组三张详情页，讲老木的来历">三张详情页，讲来历</button>
+         <button class="starter" data-fill="把上面这套图的卖点写成英文 listing 文案">把这套图写成 listing 文案</button>
+         <button class="starter" data-fill="换成泰语，标题短一点">换泰语，标题短一点</button>
+       </div>`,
+      { persist: false }
+    );
+  }
   box.scrollTop = box.scrollHeight;
+}
+
+/* 每个商品各自记一份对话，刷新后还在 */
+const histKey = () => (state.current ? `dukou:chat:${state.current.id}` : null);
+function loadHistory() {
+  const k = histKey();
+  if (!k) return [];
+  try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; }
+}
+function pushHistory(who, html) {
+  const k = histKey();
+  if (!k) return;
+  const arr = loadHistory();
+  arr.push({ who, html });
+  try { localStorage.setItem(k, JSON.stringify(arr.slice(-24))); } catch {}
+}
+/* 气泡里后加的图要补记一次，否则刷新后只剩文字 */
+function patchHistory(html) {
+  const k = histKey();
+  if (!k) return;
+  const arr = loadHistory();
+  if (!arr.length) return;
+  arr[arr.length - 1].html = html;
+  try { localStorage.setItem(k, JSON.stringify(arr)); } catch {}
 }
 
 /* 不用表单建商品：说话或发图就自动建 */
@@ -222,7 +264,7 @@ async function ensureProduct(text, fileName) {
   return state.current;
 }
 
-function say(container, who, html) {
+function say(container, who, html, opts = {}) {
   const el = document.createElement('div');
   el.className = `msg ${who}`;
   if (who === 'ai') {
@@ -233,6 +275,7 @@ function say(container, who, html) {
     el.querySelector('.bubble').innerHTML = html;
   }
   container.appendChild(el);
+  if (opts.persist !== false) pushHistory(who, html);
   const scroller = el.closest('.chat');
   if (scroller) scroller.scrollTop = scroller.scrollHeight;
   return el;
@@ -253,11 +296,12 @@ function shots(bubble, assets) {
     wrap.appendChild(fig);
   }
   bubble.appendChild(wrap);
+  patchHistory(bubble.innerHTML);
 }
 
 function progressBubble(text) {
   const inner = $('#chat .chat-inner');
-  const el = say(inner, 'ai', `<p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`);
+  const el = say(inner, 'ai', `<p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
   return {
     update(pct, label) {
       el.querySelector('.bar i').style.width = `${pct}%`;
@@ -363,29 +407,33 @@ const langLabel = (l) => ({ en: '英语', th: '泰语', vi: '越南语' }[l] || 
 /* ---------------- 记账 ---------------- */
 
 async function loadLedger() {
+  const money = (v) => Number(v || 0).toFixed(2);
   if (!state.current) {
-    $('#summary').innerHTML = '';
-    $('#ledgerList').innerHTML = '';
+    $('#summary').innerHTML = `
+      <div class="stat"><div class="stat-label">收入</div><div class="stat-value">0.00<span class="stat-unit">CNY</span></div></div>
+      <div class="stat"><div class="stat-label">成本</div><div class="stat-value cost">0.00<span class="stat-unit">CNY</span></div></div>
+      <div class="stat"><div class="stat-label">利润</div><div class="stat-value">0.00<span class="stat-unit">CNY</span></div></div>`;
+    $('#ledgerList').innerHTML = '<li style="grid-template-columns:1fr;color:#6b7280">还没有商品。先去「生图」发一张图或说一句话，账目会记在那个商品下面。</li>';
     return;
   }
   const data = await api(`/api/ledger?productId=${state.current.id}`);
   const s = data.summary;
   $('#summary').innerHTML = `
-    <div class="stat income"><div class="k">收入</div><div class="v">${s.income}</div></div>
-    <div class="stat cost"><div class="k">成本</div><div class="v">${s.cost}</div></div>
-    <div class="stat profit"><div class="k">利润</div><div class="v">${s.profit}</div></div>`;
+    <div class="stat"><div class="stat-label">收入</div><div class="stat-value">${money(s.income)}<span class="stat-unit">CNY</span></div></div>
+    <div class="stat"><div class="stat-label">成本</div><div class="stat-value cost">${money(s.cost)}<span class="stat-unit">CNY</span></div></div>
+    <div class="stat"><div class="stat-label">利润</div><div class="stat-value">${money(s.profit)}<span class="stat-unit">CNY</span></div></div>`;
   const ul = $('#ledgerList');
   ul.innerHTML = '';
   if (!data.items.length) {
-    ul.innerHTML = '<li style="grid-template-columns:1fr;color:#8b9bad">还没有账目。卖出一单记一笔收入，运费广告也记上，利润才是真的。</li>';
+    ul.innerHTML = '<li style="grid-template-columns:1fr;color:#6b7280">还没有账目。卖出一单记一笔收入，运费广告也记上，利润才是真的。</li>';
     return;
   }
   for (const e of data.items) {
     const li = document.createElement('li');
-    li.innerHTML = '<span></span><span></span><span class="amt"></span>';
+    li.innerHTML = '<span class="kind"></span><span></span><span class="amt"></span>';
     li.children[0].textContent = label(e.type);
     li.children[1].textContent = e.note || '';
-    li.children[2].textContent = `${e.type === 'income' ? '+' : '-'}${e.amount} ${e.currency}`;
+    li.children[2].textContent = `${e.type === 'income' ? '+' : '-'}${money(e.amount)} ${e.currency}`;
     li.children[2].classList.add(e.type === 'income' ? 'plus' : 'minus');
     ul.appendChild(li);
   }
@@ -411,11 +459,11 @@ const ENDPOINTS = [
 
 function renderEndpoints() {
   $('#endpoints').innerHTML = ENDPOINTS.map(([m, p, d]) => `
-    <div class="row-e">
+    <div class="ep">
       <span class="m ${m}">${m}</span>
-      <code>${p}</code>
-      <span>${d}</span>
-      <span class="who">卓</span>
+      <span class="p">${p}</span>
+      <span class="d">${d}</span>
+      <span class="r">卓</span>
     </div>`).join('');
 }
 
@@ -469,8 +517,15 @@ $('#file').onchange = async (ev) => {
   ev.target.value = '';
 };
 
-$('#btnSend').onclick = () => {
-  const ask = $('#ask').value.trim();
+$('#chat').addEventListener('click', (ev) => {
+  const chip = ev.target.closest('.starter');
+  if (!chip) return;
+  $('#ask').value = chip.dataset.fill || chip.textContent;
+  $('#ask').focus();
+  $('#ask').setSelectionRange($('#ask').value.length, $('#ask').value.length);
+});
+
+$('#btnSend').onclick = () => {  const ask = $('#ask').value.trim();
   $('#ask').value = '';
   doImage(ask);
 };
