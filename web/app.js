@@ -342,43 +342,80 @@ function jobPromise(jobId, onTick) {
 
 /* ---------------- 出图参数：在对话区里问 ---------------- */
 
-/** 在聊天流里发一张提问卡，选完 resolve({count,width,height,quality})，取消 resolve(null) */
-function askParams({ title, thumb, ask }) {
-  const inner = $('#chat .chat-inner');
+const CN_NUM = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6 };
+
+/** 从用户这句话里读出已经说定的参数，读到的就不再问 */
+function readIntent(text) {
+  const s = String(text || '');
+  const known = {};
+  const cnt = s.match(/([1-6一二两三四五六])\s*张/);
+  if (cnt) known.count = CN_NUM[cnt[1]] || Number(cnt[1]);
+  const wh = s.match(/(\d{3,4})\s*[x×*]\s*(\d{3,4})/i);
+  if (wh) known.size = `${Number(wh[1])}x${Number(wh[2])}`;
+  else if (/竖屏|9\s*[:：]\s*16/.test(s)) known.size = '1080x1920';
+  else if (/方图|正方|1\s*[:：]\s*1/.test(s)) known.size = '800x800';
+  if (/4k|超清/i.test(s)) known.quality = '4k';
+  else if (/2k|高清/i.test(s)) known.quality = '2k';
+  else if (/1k|标准清晰|标清/.test(s)) known.quality = '1k';
+  return known;
+}
+
+/** 只问还没说定的；三件都说清了就直接 resolve，不发卡片 */
+function askParams({ title, thumb, ask, known = {} }) {
   const base = pf(state.platform);
-  const st = { count: $('#template').value === 'detail' ? 3 : 2, size: 'platform', quality: '1k' };
+  const st = {
+    count: known.count || ($('#template').value === 'detail' ? 3 : 2),
+    size: known.size || 'platform',
+    quality: known.quality || '1k',
+  };
+  const need = {
+    count: !known.count,
+    size: !known.size,
+    quality: !known.quality,
+  };
+  const resolveOpts = (s) => {
+    const [w, h] = s.size === 'platform' ? [null, null] : String(s.size).split('x').map(Number);
+    return { count: s.count, width: w, height: h, quality: s.quality };
+  };
+  if (!need.count && !need.size && !need.quality) return Promise.resolve(resolveOpts(st));
+
+  const inner = $('#chat .chat-inner');
+  const left = [need.count && '几张', need.size && '多大', need.quality && '多清晰'].filter(Boolean).join('、');
 
   const el = say(inner, 'ai', `
-    <p class="ask-q">出图前定三件事，选好我就开工。</p>
+    <p class="ask-q">还差${left}，定完我就开工。</p>
     ${ask ? `<div class="ask-quote">${esc(ask)}</div>` : ''}
     <div class="ask-sub">${esc(title || '新商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
+    ${need.count ? `
     <div class="opt">
       <div class="opt-label">要几张</div>
       <div class="opt-row" data-k="count">
-        <button type="button" class="chip" data-v="1">1 张</button>
-        <button type="button" class="chip on" data-v="2">2 张<span class="tag">常用</span></button>
-        <button type="button" class="chip" data-v="3">3 张</button>
-        <button type="button" class="chip" data-v="5">5 张</button>
+        <button type="button" class="chip${st.count === 1 ? ' on' : ''}" data-v="1">1 张</button>
+        <button type="button" class="chip${st.count === 2 ? ' on' : ''}" data-v="2">2 张<span class="tag">常用</span></button>
+        <button type="button" class="chip${st.count === 3 ? ' on' : ''}" data-v="3">3 张</button>
+        <button type="button" class="chip${st.count === 5 ? ' on' : ''}" data-v="5">5 张</button>
         <span class="custom">自定义 <input class="in cnt" type="number" min="1" max="6" placeholder="4"></span>
       </div>
-    </div>
+    </div>` : ''}
+    ${need.size ? `
     <div class="opt">
       <div class="opt-label">尺寸<span class="opt-hint">当前：${base.name} ${base.w}×${base.h}</span></div>
       <div class="opt-row" data-k="size">
-        <button type="button" class="chip" data-v="platform">平台默认 <span class="dim">${base.w}×${base.h}</span></button>
-        <button type="button" class="chip" data-v="800x800">方图 1:1 <span class="dim">800×800</span></button>
-        <button type="button" class="chip" data-v="1080x1920">竖屏 9:16 <span class="dim">1080×1920</span></button>
+        <button type="button" class="chip${st.size === 'platform' ? ' on' : ''}" data-v="platform">平台默认 <span class="dim">${base.w}×${base.h}</span></button>
+        <button type="button" class="chip${st.size === '800x800' ? ' on' : ''}" data-v="800x800">方图 1:1 <span class="dim">800×800</span></button>
+        <button type="button" class="chip${st.size === '1080x1920' ? ' on' : ''}" data-v="1080x1920">竖屏 9:16 <span class="dim">1080×1920</span></button>
         <span class="custom">自定义 <input class="in w" type="number" min="200" max="4000" placeholder="${base.w}">×<input class="in h" type="number" min="200" max="4000" placeholder="${base.h}"></span>
       </div>
-    </div>
+    </div>` : ''}
+    ${need.quality ? `
     <div class="opt">
       <div class="opt-label">清晰度<span class="opt-hint">主流平台 1K 就够</span></div>
       <div class="opt-row" data-k="quality">
-        <button type="button" class="chip on" data-v="1k">标准 1K<span class="tag">够用</span></button>
-        <button type="button" class="chip" data-v="2k">高清 2K</button>
-        <button type="button" class="chip" data-v="4k">超清 4K</button>
+        <button type="button" class="chip${st.quality === '1k' ? ' on' : ''}" data-v="1k">标准 1K<span class="tag">够用</span></button>
+        <button type="button" class="chip${st.quality === '2k' ? ' on' : ''}" data-v="2k">高清 2K</button>
+        <button type="button" class="chip${st.quality === '4k' ? ' on' : ''}" data-v="4k">超清 4K</button>
       </div>
-    </div>
+    </div>` : ''}
     <div class="ask-foot">
       <button type="button" class="link" data-act="cancel">先不出</button>
       <button type="button" class="btn-primary" data-act="go">开始生成</button>
@@ -391,7 +428,7 @@ function askParams({ title, thumb, ask }) {
   const bubble = el.querySelector('.bubble');
 
   const sync = () => {
-    el.querySelectorAll('.opt-row[data-k="count"] .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.v) === st.count && !cntEl.value));
+    if (cntEl) el.querySelectorAll('.opt-row[data-k="count"] .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.v) === st.count && !cntEl.value));
     el.querySelectorAll('.opt-row[data-k="size"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.size));
     el.querySelectorAll('.opt-row[data-k="quality"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.quality));
   };
@@ -402,17 +439,15 @@ function askParams({ title, thumb, ask }) {
       if (done) return;
       done = true;
       if (!ok) { el.remove(); resolve(null); return; }
-      const p = pf(state.platform);
-      const count = Number(cntEl.value) || st.count;
-      const [w, h] = st.size === 'platform' ? [null, null]
-        : st.size === 'custom' ? [Number(wEl.value) || p.w, Number(hEl.value) || p.h]
-        : st.size.split('x').map(Number);
-      const sizeText = w ? `${w}×${h}` : `${p.name} ${p.w}×${p.h}`;
-      bubble.innerHTML = `<p class="ask-done">好，${count} 张 · ${sizeText} · ${st.quality.toUpperCase()}，开始出图。</p>`;
+      if (wEl && (wEl.value || hEl.value)) st.size = `${Number(wEl.value) || base.w}x${Number(hEl.value) || base.h}`;
+      if (cntEl && cntEl.value) st.count = Number(cntEl.value);
+      const opts = resolveOpts(st);
+      const sizeText = opts.width ? `${opts.width}×${opts.height}` : `${base.name} ${base.w}×${base.h}`;
+      bubble.innerHTML = `<p class="ask-done">好，${opts.count} 张 · ${sizeText} · ${opts.quality.toUpperCase()}，开始出图。</p>`;
       patchHistory(bubble.innerHTML);
       const scroller = el.closest('.chat');
       if (scroller) scroller.scrollTop = scroller.scrollHeight;
-      resolve({ count, width: w, height: h, quality: st.quality });
+      resolve(opts);
     };
 
     el.addEventListener('click', (ev) => {
@@ -420,16 +455,16 @@ function askParams({ title, thumb, ask }) {
       if (chip) {
         const k = chip.closest('.opt-row').dataset.k;
         st[k] = k === 'count' ? Number(chip.dataset.v) : chip.dataset.v;
-        if (k === 'count') cntEl.value = '';
-        if (k === 'size') { wEl.value = ''; hEl.value = ''; }
+        if (k === 'count' && cntEl) cntEl.value = '';
+        if (k === 'size' && wEl) { wEl.value = ''; hEl.value = ''; }
         sync();
         return;
       }
       const act = ev.target.closest('[data-act]');
       if (act) finish(act.dataset.act === 'go');
     });
-    cntEl.oninput = () => { if (cntEl.value) st.count = Number(cntEl.value); sync(); };
-    wEl.oninput = hEl.oninput = () => { if (wEl.value || hEl.value) st.size = 'custom'; sync(); };
+    if (cntEl) cntEl.oninput = () => { if (cntEl.value) st.count = Number(cntEl.value); sync(); };
+    if (wEl) wEl.oninput = hEl.oninput = () => { if (wEl.value || hEl.value) st.size = 'custom'; sync(); };
   });
 }
 
@@ -635,12 +670,14 @@ $('#chat').addEventListener('click', (ev) => {
 $('#btnSend').onclick = async () => {
   const ask = $('#ask').value.trim();
   $('#ask').value = '';
-  // 有图，或者话里明显是在要图 → 先在对话区里问清几张/多大/多清晰
+  // 有图，或者话里明显是在要图 → 话里已经说清的参数不再问，只补没说的
   if (state.lastUpload || IMAGE_WORDS.test(ask) || !ask) {
+    const known = readIntent(ask);
     const opts = await askParams({
       title: state.current ? state.current.title : '新商品',
       thumb: state.lastUploadPreview,
       ask,
+      known,
     });
     if (!opts) { $('#ask').value = ask; return; }
     doImage(ask, opts);
