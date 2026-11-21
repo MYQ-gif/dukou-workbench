@@ -1,4 +1,5 @@
-// 自测「出图参数询问框」：发图/要图 → 弹框 → 选参数 → 出图规格正确
+// 自测「对话区里的出图提问卡」：说一句要图的话 → 卡片出现在聊天流里 → 选参数 → 规格正确
+// 用法：node scripts/dialogcheck.mjs docs/preview-ask.png
 import { writeFileSync } from 'node:fs';
 const CDP = process.env.CDP || 'http://127.0.0.1:9334';
 const OUT = process.argv[2] || '';
@@ -17,15 +18,32 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 await ev('location.hash=""; location.reload()');
 await sleep(2500);
 
-const before = await ev(`(async () => (await (await fetch('/api/products?limit=1')).json()).items[0]?.assets?.length || 0)()`);
+const before = await ev(`(async () => { const p = await (await fetch('/api/products?limit=1')).json(); return p.items[0]?.assets?.length || 0; })()`);
 console.log('assets before', before);
 
 // 说一句要图的话，发出去
 await ev(`(() => { const a = document.querySelector('#ask'); a.value = '做一张白底主图，标题写 STAY A WHILE.'; document.querySelector('#btnSend').click(); })()`);
-await sleep(600);
-const opened = await ev(`(() => { const d = document.querySelector('#askDlg'); return { open: d.open, sub: document.querySelector('#dlgSub').textContent.trim(), hint: document.querySelector('#sizeHint').textContent.trim() }; })()`);
-console.log('dialog', JSON.stringify(opened));
-if (!opened.open) throw new Error('询问框没有弹出');
+await sleep(700);
+
+const asked = await ev(`(() => {
+  const card = document.querySelector('#chat .msg:last-child .ask-q');
+  return {
+    inChat: !!card,
+    dialogGone: !document.querySelector('#askDlg'),
+    chips: document.querySelectorAll('#chat .msg:last-child .chip').length,
+    sub: document.querySelector('#chat .msg:last-child .ask-sub')?.textContent.trim(),
+  };
+})()`);
+console.log('ask card', JSON.stringify(asked));
+if (!asked.inChat) throw new Error('提问卡没有出现在对话区');
+if (!asked.dialogGone) throw new Error('旧弹窗还在');
+
+// 选 3 张 + 2K
+await ev(`document.querySelector('#chat .msg:last-child .opt-row[data-k="count"] .chip[data-v="3"]').click()`);
+await ev(`document.querySelector('#chat .msg:last-child .opt-row[data-k="quality"] .chip[data-v="2k"]').click()`);
+await sleep(250);
+const picked = await ev(`[...document.querySelectorAll('#chat .msg:last-child .chip.on')].map((c) => c.textContent.trim()).join(' | ')`);
+console.log('picked', picked);
 
 if (OUT) {
   const shot = await send('Page.captureScreenshot', { format: 'png' });
@@ -33,12 +51,7 @@ if (OUT) {
   console.log('saved', OUT);
 }
 
-// 选 3 张 + 2K，然后确认
-await ev(`document.querySelector('#optCount .chip[data-count="3"]').click()`);
-await ev(`document.querySelector('#optQuality .chip[data-quality="2k"]').click()`);
-await sleep(200);
-console.log('after pick', await ev(`document.querySelector('#cntHint').textContent.trim()`));
-await ev(`document.querySelector('#dlgGo').click()`);
+await ev(`document.querySelector('#chat .msg:last-child [data-act="go"]').click()`);
 await sleep(3500);
 
 const after = await ev(`(async () => {
@@ -46,7 +59,8 @@ const after = await ev(`(async () => {
   const p = await (await fetch('/api/products/' + items[0].id)).json();
   const imgs = p.assets.filter((a) => a.kind !== 'upload' && a.kind !== 'copy');
   const last = imgs.slice(-3).map((a) => a.width + 'x' + a.height + ' ' + a.meta.quality);
-  return { total: imgs.length, last, dlgOpen: document.querySelector('#askDlg').open, msgs: document.querySelectorAll('#chat .msg').length };
+  const done = document.querySelector('#chat .msg:last-child .ask-done');
+  return { total: imgs.length, last, cardDone: done ? done.textContent.trim() : null };
 })()`);
 console.log('after', JSON.stringify(after));
 ws.close();

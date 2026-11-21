@@ -340,79 +340,97 @@ function jobPromise(jobId, onTick) {
   });
 }
 
-/* ---------------- 出图参数询问框 ---------------- */
+/* ---------------- 出图参数：在对话区里问 ---------------- */
 
-const dlgState = { count: 2, size: 'platform', quality: '1k' };
+/** 在聊天流里发一张提问卡，选完 resolve({count,width,height,quality})，取消 resolve(null) */
+function askParams({ title, thumb, ask }) {
+  const inner = $('#chat .chat-inner');
+  const base = pf(state.platform);
+  const st = { count: $('#template').value === 'detail' ? 3 : 2, size: 'platform', quality: '1k' };
 
-function sizeLabel() {
-  if (dlgState.size === 'platform') {
-    const p = pf(state.platform);
-    return `${p.name} ${p.w}×${p.h}`;
-  }
-  if (dlgState.size === 'custom') {
-    const w = Number($('#wCustom').value) || pf(state.platform).w;
-    const h = Number($('#hCustom').value) || pf(state.platform).h;
-    return `自定义 ${w}×${h}`;
-  }
-  return dlgState.size.replace('x', '×');
-}
+  const el = say(inner, 'ai', `
+    <p class="ask-q">出图前定三件事，选好我就开工。</p>
+    ${ask ? `<div class="ask-quote">${esc(ask)}</div>` : ''}
+    <div class="ask-sub">${esc(title || '新商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
+    <div class="opt">
+      <div class="opt-label">要几张</div>
+      <div class="opt-row" data-k="count">
+        <button type="button" class="chip" data-v="1">1 张</button>
+        <button type="button" class="chip on" data-v="2">2 张<span class="tag">常用</span></button>
+        <button type="button" class="chip" data-v="3">3 张</button>
+        <button type="button" class="chip" data-v="5">5 张</button>
+        <span class="custom">自定义 <input class="in cnt" type="number" min="1" max="6" placeholder="4"></span>
+      </div>
+    </div>
+    <div class="opt">
+      <div class="opt-label">尺寸<span class="opt-hint">当前：${base.name} ${base.w}×${base.h}</span></div>
+      <div class="opt-row" data-k="size">
+        <button type="button" class="chip" data-v="platform">平台默认 <span class="dim">${base.w}×${base.h}</span></button>
+        <button type="button" class="chip" data-v="800x800">方图 1:1 <span class="dim">800×800</span></button>
+        <button type="button" class="chip" data-v="1080x1920">竖屏 9:16 <span class="dim">1080×1920</span></button>
+        <span class="custom">自定义 <input class="in w" type="number" min="200" max="4000" placeholder="${base.w}">×<input class="in h" type="number" min="200" max="4000" placeholder="${base.h}"></span>
+      </div>
+    </div>
+    <div class="opt">
+      <div class="opt-label">清晰度<span class="opt-hint">主流平台 1K 就够</span></div>
+      <div class="opt-row" data-k="quality">
+        <button type="button" class="chip on" data-v="1k">标准 1K<span class="tag">够用</span></button>
+        <button type="button" class="chip" data-v="2k">高清 2K</button>
+        <button type="button" class="chip" data-v="4k">超清 4K</button>
+      </div>
+    </div>
+    <div class="ask-foot">
+      <button type="button" class="link" data-act="cancel">先不出</button>
+      <button type="button" class="btn-primary" data-act="go">开始生成</button>
+    </div>
+  `, { persist: false });
 
-function syncDlg() {
-  $$('#optCount .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.count) === dlgState.count && !$('#cntCustom').value));
-  $$('#optSize .chip').forEach((c) => c.classList.toggle('on', c.dataset.size === dlgState.size));
-  $$('#optQuality .chip').forEach((c) => c.classList.toggle('on', c.dataset.quality === dlgState.quality));
-  const p = pf(state.platform);
-  $('#chipPlatform').innerHTML = `平台默认 <span class="dim">${p.w}×${p.h}</span>`;
-  $('#wCustom').placeholder = String(p.w);
-  $('#hCustom').placeholder = String(p.h);
-  $('#sizeHint').textContent = `当前：${sizeLabel()}`;
-  $('#cntHint').textContent = `将出 ${dlgState.count} 张 · ${dlgState.quality.toUpperCase()}`;
-}
+  const cntEl = el.querySelector('.cnt');
+  const wEl = el.querySelector('.custom .w');
+  const hEl = el.querySelector('.custom .h');
+  const bubble = el.querySelector('.bubble');
 
-/** 打开询问框；确认后把 opts 交给回调 */
-function askParams({ title, thumb, onSubmit }) {
-  const dlg = $('#askDlg');
-  dlgState.count = $('#template').value === 'detail' ? 3 : 2;
-  dlgState.size = 'platform';
-  dlgState.quality = '1k';
-  $('#cntCustom').value = '';
-  $('#wCustom').value = '';
-  $('#hCustom').value = '';
-  $('#dlgSub').innerHTML = `${esc(title || '')}${thumb ? `<img class="dlg-thumb" src="${thumb}" alt="">` : ''}`;
-  syncDlg();
-
-  const done = (ok) => {
-    dlg.removeEventListener('close', onClose);
-    $('#dlgGo').onclick = null;
-    $('#dlgCancel').onclick = null;
-    if (!ok) return;
-    const base = pf(state.platform);
-    const [w, h] = dlgState.size === 'platform' ? [null, null] : dlgState.size === 'custom' ? [Number($('#wCustom').value) || base.w, Number($('#hCustom').value) || base.h] : dlgState.size.split('x').map(Number);
-    onSubmit({
-      count: Number($('#cntCustom').value) || dlgState.count,
-      width: w,
-      height: h,
-      quality: dlgState.quality,
-    });
+  const sync = () => {
+    el.querySelectorAll('.opt-row[data-k="count"] .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.v) === st.count && !cntEl.value));
+    el.querySelectorAll('.opt-row[data-k="size"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.size));
+    el.querySelectorAll('.opt-row[data-k="quality"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.quality));
   };
-  const onClose = () => done(dlg.returnValue === 'go');
-  dlg.addEventListener('close', onClose);
-  $('#dlgCancel').onclick = () => dlg.close('cancel');
-  $('#dlgGo').onclick = (ev) => { ev.preventDefault(); dlg.close('go'); };
 
-  $$('#optCount .chip').forEach((c) => (c.onclick = () => { dlgState.count = Number(c.dataset.count); $('#cntCustom').value = ''; syncDlg(); }));
-  $$('#optSize .chip').forEach((c) => (c.onclick = () => { dlgState.size = c.dataset.size; $('#wCustom').value = ''; $('#hCustom').value = ''; syncDlg(); }));
-  $$('#optQuality .chip').forEach((c) => (c.onclick = () => { dlgState.quality = c.dataset.quality; syncDlg(); }));
-  $('#cntCustom').oninput = () => syncDlg();
-  for (const id of ['#wCustom', '#hCustom']) {
-    $(id).oninput = () => {
-      if ($('#wCustom').value || $('#hCustom').value) dlgState.size = 'custom';
-      syncDlg();
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      if (!ok) { el.remove(); resolve(null); return; }
+      const p = pf(state.platform);
+      const count = Number(cntEl.value) || st.count;
+      const [w, h] = st.size === 'platform' ? [null, null]
+        : st.size === 'custom' ? [Number(wEl.value) || p.w, Number(hEl.value) || p.h]
+        : st.size.split('x').map(Number);
+      const sizeText = w ? `${w}×${h}` : `${p.name} ${p.w}×${p.h}`;
+      bubble.innerHTML = `<p class="ask-done">好，${count} 张 · ${sizeText} · ${st.quality.toUpperCase()}，开始出图。</p>`;
+      patchHistory(bubble.innerHTML);
+      const scroller = el.closest('.chat');
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+      resolve({ count, width: w, height: h, quality: st.quality });
     };
-  }
 
-  if (typeof dlg.showModal === 'function') dlg.showModal();
-  else dlg.setAttribute('open', '');
+    el.addEventListener('click', (ev) => {
+      const chip = ev.target.closest('.chip');
+      if (chip) {
+        const k = chip.closest('.opt-row').dataset.k;
+        st[k] = k === 'count' ? Number(chip.dataset.v) : chip.dataset.v;
+        if (k === 'count') cntEl.value = '';
+        if (k === 'size') { wEl.value = ''; hEl.value = ''; }
+        sync();
+        return;
+      }
+      const act = ev.target.closest('[data-act]');
+      if (act) finish(act.dataset.act === 'go');
+    });
+    cntEl.oninput = () => { if (cntEl.value) st.count = Number(cntEl.value); sync(); };
+    wEl.oninput = hEl.oninput = () => { if (wEl.value || hEl.value) st.size = 'custom'; sync(); };
+  });
 }
 
 const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
@@ -614,16 +632,18 @@ $('#chat').addEventListener('click', (ev) => {
   $('#ask').setSelectionRange($('#ask').value.length, $('#ask').value.length);
 });
 
-$('#btnSend').onclick = () => {
+$('#btnSend').onclick = async () => {
   const ask = $('#ask').value.trim();
   $('#ask').value = '';
-  // 有图，或者话里明显是在要图 → 先问清几张/多大/多清晰
+  // 有图，或者话里明显是在要图 → 先在对话区里问清几张/多大/多清晰
   if (state.lastUpload || IMAGE_WORDS.test(ask) || !ask) {
-    askParams({
+    const opts = await askParams({
       title: state.current ? state.current.title : '新商品',
       thumb: state.lastUploadPreview,
-      onSubmit: (opts) => doImage(ask, opts),
+      ask,
     });
+    if (!opts) { $('#ask').value = ask; return; }
+    doImage(ask, opts);
     return;
   }
   doImage(ask);

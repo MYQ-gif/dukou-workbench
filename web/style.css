@@ -1,4 +1,4 @@
-﻿/* 渡口 · 出海工作台
+/* 渡口 · 出海工作台
    风格：framed-sheet（外框一色 + 白纸一张，深度只来自一个色阶，不上阴影）
    品牌色沿用主人给的七色，只做角色分配：
      外框 #EDE7DA（奶油压深一档） / 纸 #FFFFFF / 墨 #0A2E5C / 链接 #1B6CA8
@@ -387,20 +387,12 @@ input.ctl::placeholder { color: #9aa0a8; }
 .starter:hover { border-color: var(--link); color: var(--link); }
 .starter:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 
-/* ---------- 出图参数询问框 ---------- */
-.dlg {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-lg);
-  padding: 0;
-  width: min(520px, calc(100vw - 32px));
-  color: var(--ink);
-  background: var(--sheet);
-}
-.dlg::backdrop { background: rgba(10, 46, 92, 0.18); }
-.dlg-form { padding: 22px 24px 18px; }
-.dlg h2 { font-size: 18px; margin: 0 0 4px; }
-.dlg-sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
-.opt { margin-bottom: 16px; }
+/* ---------- 对话区里的出图提问卡 ---------- */
+.ask-q { margin: 0 0 4px; }
+.ask-quote { border-left: 2px solid var(--rule); padding-left: 10px; color: var(--muted); font-size: 13px; margin: 6px 0 10px; }
+.ask-sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+.ask-sub .thumb { width: 28px; height: 28px; margin: 0; border-radius: 4px; }
+.opt { margin-bottom: 12px; }
 .opt-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; align-items: baseline; }
 .opt-hint { font-weight: 400; font-size: 12px; color: var(--muted); }
 .opt-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -421,8 +413,8 @@ input.ctl::placeholder { color: #9aa0a8; }
   border: 1px solid var(--rule); border-radius: 6px; padding: 5px 8px; background: #fdfcf9;
 }
 .custom input:focus { outline: 2px solid var(--link); outline-offset: 1px; }
-.dlg-foot { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 22px; }
-.dlg-thumb { width: 34px; height: 34px; object-fit: cover; border-radius: 5px; border: 1px solid var(--rule); vertical-align: middle; margin-left: 8px; }
+.ask-foot { display: flex; justify-content: flex-start; align-items: center; gap: 14px; margin-top: 16px; }
+.ask-done { color: var(--muted); }
 
 /* 用户气泡里的原图缩略图 */
 .thumb { display: block; width: 120px; height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid var(--rule); margin: 6px 0 2px; }

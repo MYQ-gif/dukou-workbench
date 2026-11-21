@@ -1,4 +1,4 @@
-﻿// 自测：带图片附件时，询问框应显示缩略图；确认后按所选规格出图
+// 自测：带图片附件时，询问框应显示缩略图；确认后按所选规格出图
 import { writeFileSync } from 'node:fs';
 const CDP = process.env.CDP || 'http://127.0.0.1:9334';
 const OUT = process.argv[2] || '';
@@ -36,8 +36,8 @@ console.log('attachInfo', await ev(`document.querySelector('#attachInfo').textCo
 
 await ev(`(() => { const a = document.querySelector('#ask'); a.value = '按这张桌子出一组图'; document.querySelector('#btnSend').click(); })()`);
 await sleep(700);
-const st = await ev(`(() => { const d = document.querySelector('#askDlg'); const t = document.querySelector('.dlg-thumb'); return { open: d.open, thumb: t ? t.naturalWidth : 0, sub: document.querySelector('#dlgSub').textContent.trim() }; })()`);
-console.log('dialog', JSON.stringify(st));
+const st = await ev(`(() => { const m = document.querySelector('#chat .msg:last-child'); const t = m?.querySelector('.ask-sub .thumb'); return { inChat: !!m?.querySelector('.ask-q'), thumb: t ? t.naturalWidth : 0, sub: m?.querySelector('.ask-sub')?.textContent.trim() }; })()`);
+console.log('ask card', JSON.stringify(st));
 
 if (OUT) {
   const shot = await send('Page.captureScreenshot', { format: 'png' });
@@ -45,12 +45,12 @@ if (OUT) {
 }
 
 // 选 自定义尺寸 600×900 + 4K
-await ev(`document.querySelector('#wCustom').value = '600'; document.querySelector('#wCustom').dispatchEvent(new Event('input', {bubbles:true}));`);
-await ev(`document.querySelector('#hCustom').value = '900'; document.querySelector('#hCustom').dispatchEvent(new Event('input', {bubbles:true}));`);
-await ev(`document.querySelector('#optQuality .chip[data-quality="4k"]').click()`);
+await ev(`const wEl = document.querySelector('#chat .msg:last-child .custom .w'); wEl.value = '600'; wEl.dispatchEvent(new Event('input', {bubbles:true}));`);
+await ev(`const hEl = document.querySelector('#chat .msg:last-child .custom .h'); hEl.value = '900'; hEl.dispatchEvent(new Event('input', {bubbles:true}));`);
+await ev(`document.querySelector('#chat .msg:last-child .opt-row[data-k="quality"] .chip[data-v="4k"]').click()`);
 await sleep(200);
-console.log('hint', await ev(`document.querySelector('#sizeHint').textContent`), '|', await ev(`document.querySelector('#cntHint').textContent`));
-await ev(`document.querySelector('#dlgGo').click()`);
+console.log('picked', await ev(`[...document.querySelectorAll('#chat .msg:last-child .chip.on')].map(c=>c.textContent.trim()).join(' | ')`));
+await ev(`document.querySelector('#chat .msg:last-child [data-act="go"]').click()`);
 await sleep(4000);
 
 const after = await ev(`(async () => {
