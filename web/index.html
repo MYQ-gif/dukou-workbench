@@ -15,7 +15,6 @@
         <div class="brand-name">渡口 <span class="brand-sub">一人做跨境的工作台</span></div>
         <div class="prod-line">
           <select id="prodSel" class="select bare"></select>
-          <button id="btnNew" class="link">+ 新建商品</button>
           <span id="pMeta" class="muted"></span>
         </div>
       </div>
@@ -145,31 +144,6 @@
     <div id="whBody" class="wh-body"></div>
   </aside>
 </main>
-
-<dialog id="dlg">
-  <form method="dialog">
-    <h2>新建商品</h2>
-    <label>商品名 <input id="newTitle" required placeholder="老榆木餐桌"></label>
-    <label>卖点（逗号分隔）<input id="newPoints" placeholder="实木手工, 老料新做"></label>
-    <label>平台
-      <select id="newPlatform">
-        <option value="taobao">淘宝</option>
-        <option value="xianyu">闲鱼</option>
-        <option value="jd">京东</option>
-        <option value="amazon">Amazon</option>
-        <option value="ebay">eBay</option>
-        <option value="shopee" selected>Shopee</option>
-        <option value="lazada">Lazada</option>
-        <option value="tiktok">TikTok Shop</option>
-      </select>
-    </label>
-    <label>原始描述 <textarea id="newRaw" rows="3" placeholder="把客户会看到的那段话粘贴进来"></textarea></label>
-    <menu>
-      <button value="cancel" class="btn">取消</button>
-      <button id="btnCreate" value="ok" class="btn primary">创建</button>
-    </menu>
-  </form>
-</dialog>
 
 <script type="module" src="/app.js"></script>
 </body>

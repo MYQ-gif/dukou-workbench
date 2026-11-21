@@ -42,7 +42,7 @@ async function loadProducts(preferId) {
     : '<option value="">还没有商品</option>';
   if (!items.length) {
     state.current = null;
-    $('#pMeta').textContent = '点「新建商品」开始';
+    $('#pMeta').textContent = '发张图或说句话就开始';
     chatReset();
     return;
   }
@@ -187,11 +187,39 @@ function chatReset() {
   say(
     inner,
     'ai',
-    `<p>${p ? `「${esc(p.title)}」已经就位。` : '先点上方「新建商品」，我再开始给你做图。'}</p>
-     <p>发一张商品原图，选平台、模板和语言，点发送——我出套图。也可以直接在输入框里提要求。</p>
+    `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没商品，直接发图或者说话就行，我会自动开一个。'}</p>
+     <p>选好平台，发一张商品原图再说要求——我出套图。想换商品就说「新建商品：名字」。</p>
      <p class="muted-sm">出好的图和文案会落进右上角的「仓库」，随时翻。</p>`
   );
   box.scrollTop = box.scrollHeight;
+}
+
+/* 不用表单建商品：说话或发图就自动建 */
+const NEW_WORDS = /^(?:新建商品|新商品|新建|新加|换个商品|换一个商品|换商品)/;
+function newProductTitle(text) {
+  const m = String(text || '').match(/^(?:新建商品|新商品|新建|新加|换个商品|换一个商品|换商品)\s*[:：,，]?\s*/);
+  return m ? text.slice(m[0].length).trim() : '';
+}
+
+async function ensureProduct(text, fileName) {
+  const explicit = newProductTitle(text || '');
+  const wantsNew = NEW_WORDS.test(String(text || ''));
+  if (state.current && !wantsNew) return state.current;
+
+  const fallback = String(fileName || '').replace(/\.[^.]+$/, '');
+  const title = (explicit || (wantsNew ? '' : String(text || '').slice(0, 16)) || fallback || '新商品').trim();
+  const product = await api('/api/products', {
+    method: 'POST',
+    body: {
+      title: title.slice(0, 40),
+      platform: state.platform,
+      sellingPoints: [],
+      rawText: wantsNew ? '' : String(text || ''),
+      targetLangs: ['en'],
+    },
+  });
+  await loadProducts(product.id);
+  return state.current;
 }
 
 function say(container, who, html) {
@@ -269,7 +297,12 @@ function jobPromise(jobId, onTick) {
 }
 
 async function doImage(askText) {
-  if (!state.current) return $('#dlg').showModal();
+  const text = String(askText || '').trim();
+  if (!state.current && !text && !state.lastUpload) {
+    say($('#chat .chat-inner'), 'ai', '<p>先发张图，或者直接说要做什么，比如「新建商品：老榆木餐桌」。</p>');
+    return;
+  }
+  await ensureProduct(text, state.lastUploadName);
   const inner = $('#chat .chat-inner');
   const before = new Set((state.current.assets || []).map((a) => a.id));
   const tpl = $('#template').value;
@@ -303,7 +336,7 @@ async function doImage(askText) {
 }
 
 async function doCopy() {
-  if (!state.current) return $('#dlg').showModal();
+  await ensureProduct($('#ask').value.trim(), state.lastUploadName);
   const inner = $('#chat .chat-inner');
   say(inner, 'user', `<p>只要文案 · ${esc(pf(state.platform).name)}</p>`);
   const box = progressBubble('正在写文案…');
@@ -420,33 +453,14 @@ $('#tabs').addEventListener('click', (ev) => {
 
 $('#prodSel').addEventListener('change', (ev) => { if (ev.target.value) selectProduct(ev.target.value); });
 
-$('#btnNew').onclick = () => $('#dlg').showModal();
-
-$('#dlg').addEventListener('close', async () => {
-  if ($('#dlg').returnValue !== 'ok') return;
-  const title = $('#newTitle').value.trim();
-  if (!title) return;
-  const product = await api('/api/products', {
-    method: 'POST',
-    body: {
-      title,
-      platform: $('#newPlatform').value,
-      sellingPoints: $('#newPoints').value.split(/[,，]/).map((x) => x.trim()).filter(Boolean),
-      rawText: $('#newRaw').value.trim(),
-      targetLangs: ['en'],
-    },
-  });
-  $('#newTitle').value = $('#newPoints').value = $('#newRaw').value = '';
-  await loadProducts(product.id);
-});
-
 $('#file').onchange = async (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
-  if (!state.current) { $('#dlg').showModal(); return; }
   try {
+    await ensureProduct('', file.name);
     const { assetId } = await uploadFile(file);
     state.lastUpload = assetId;
+    state.lastUploadName = file.name;
     state.lastUploadPreview = URL.createObjectURL(file);
     $('#attachInfo').textContent = `已附：${file.name}（${(file.size / 1024).toFixed(0)}KB）`;
   } catch (e) {
@@ -477,7 +491,7 @@ $('#vfile').onchange = (ev) => {
 };
 
 $('#btnVideo').onclick = async () => {
-  if (!state.current) return $('#dlg').showModal();
+  await ensureProduct(state.video ? state.video.name.replace(/\.[^.]+$/, '') : '');
   const out = $('#videoOut');
   out.innerHTML = '<p class="muted">处理中…</p>';
   try {
@@ -491,7 +505,7 @@ $('#btnVideo').onclick = async () => {
 };
 
 $('#btnLedger').onclick = async () => {
-  if (!state.current) return $('#dlg').showModal();
+  await ensureProduct('');
   const amount = Number($('#lAmount').value);
   if (!amount) return alert('填个金额');
   await api('/api/ledger', { method: 'POST', body: { productId: state.current.id, type: $('#lType').value, amount, note: $('#lNote').value.trim() } });
