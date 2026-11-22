@@ -121,6 +121,8 @@
 | 8 | GET | `/api/jobs/:id` | 查任务进度/结果 |
 | 9 | POST | `/api/ledger` | 记一笔账 |
 | 10 | GET | `/api/ledger` | 账目列表 + 汇总 |
+| 11 | GET | `/api/meta` | 模型供应商状态（三链路是否配好、模型名） |
+| 12 | POST | `/api/meta/check` | 单链路自检（body `{cap:"TEXT"}`），返回 ok/ms/error |
 
 ### 1) GET /api/health
 
@@ -154,8 +156,8 @@
 
 ### 6) POST /api/uploads
 
-- Header：`Content-Type: image/jpeg|image/png|image/webp`，`X-Filename: a.jpg`
-- Body：图片原始字节（≤ 15 MB，超出 → 413 `PAYLOAD_TOO_LARGE`）
+- Header：`Content-Type: image/jpeg|image/png|image/webp`（图片，≤ 15 MB）或 `video/*`、`audio/*`（视频/音频，≤ 80 MB）；超出 → 413 `PAYLOAD_TOO_LARGE`
+- Body：文件原始字节（≤ 80 MB）
 - 可选 `?productId=p_8f2a` 自动挂到商品 assets
 
 返回 201：
@@ -163,6 +165,8 @@
 ```json
 { "assetId": "a_1", "url": "/files/9f2c.jpg", "width": 1242, "height": 1660 }
 ```
+
+> 视频/音频上传时 `width`/`height` 返回 0，`url` 供后续 `params.fileUrl` 使用。
 
 > 前端约定：**直传 raw body，不要 multipart**，实现简单且不会踩边界问题。
 
@@ -180,8 +184,10 @@
   - `params.count` 1–6，默认 main/marketing 2 张、detail 3 张
   - `params.width` / `params.height` 基准像素，`null` 表示跟平台规格走（200–4000）
   - `params.quality ∈ 1k|2k|4k`，输出尺寸 = 基准 × (1 / 1.5 / 2)
-- `type=video`：`params.assetId`（视频文件 asset），`params.targetLang`
+- `type=video`：`params.fileUrl`（先 `/api/uploads` 传上来的 `/files/x.mp4`）、`params.targetLang`、可选 `params.duration`（秒，ASR 不给时间戳时兜底）
 - `type=copy`：`params.lang`，可选 `params.style`
+
+> `video` 结果：`{ lang, videoUrl: null, srtUrl, assetId, subtitles: [{start,end,text}], note }`。只出字幕轨，不做口型同步。
 
 > 这三个参数由前端「出图参数询问框」给出，默认值按模板与平台预选，用户可改。
 

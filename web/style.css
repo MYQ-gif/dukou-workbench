@@ -1,4 +1,4 @@
-﻿/* 渡口 · 出海工作台
+/* 渡口 · 出海工作台
    风格：framed-sheet（外框一色 + 白纸一张，深度只来自一个色阶，不上阴影）
    品牌色沿用主人给的七色，只做角色分配：
      外框 #EDE7DA（奶油压深一档） / 纸 #FFFFFF / 墨 #0A2E5C / 链接 #1B6CA8
@@ -529,3 +529,17 @@ h1 { letter-spacing: -0.02em; }
 @media (prefers-reduced-transparency: reduce) {
   .wh-mask { background: rgba(10, 46, 92, 0.42); }
 }
+
+/* 接口页：模型接入状态 */
+.sub-h { font-size: 13px; font-weight: 600; color: var(--ink); margin: 22px 0 6px; letter-spacing: .01em; }
+.sub-h:first-child { margin-top: 0; }
+.providers { flex: 0 0 auto; list-style: none; margin: 10px 0 0; padding: 0; border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; }
+.providers .pv { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.providers .pv + .pv { border-top: 1px solid var(--rule); }
+.pv-main { flex: 1 1 auto; min-width: 0; }
+.pv-main strong { font-weight: 600; font-size: 14px; }
+.pv-detail { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-state { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 11px; line-height: 18px; border: 1px solid var(--rule); }
+.chip-state.on { color: #0a6b3d; border-color: #bfe3cf; background: #eef7f1; }
+.chip-state.off { color: var(--muted); background: var(--frame); }
+.pv-out { min-width: 0; font-size: 12px; }

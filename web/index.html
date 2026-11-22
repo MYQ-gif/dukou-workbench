@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -134,6 +134,11 @@
 
   <!-- 接口：卓负责 -->
   <section class="panel hidden" data-panel="api">
+    <h3 class="sub-h">模型接入</h3>
+    <p class="note">三条链路各自配一份 key，写在本地 <code>.env</code> 里（不进代码、不进前端）。改完重启服务生效。</p>
+    <ul id="providers" class="providers"></ul>
+
+    <h3 class="sub-h">接口自测</h3>
     <p class="note">契约见 <code>CONTRACT.md</code>。下面就是卓要实现的全部范围，点「自测」会真打一遍。</p>
     <div class="row">
       <button id="btnPing" class="ctl" type="button">自测全部接口</button>

@@ -715,17 +715,39 @@ $('#vfile').onchange = (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
   state.video = file;
+  state.videoUrl = null;
   $('#vMeta').textContent = `${file.name} · ${(file.size / 1048576).toFixed(1)}MB`;
-  if (file.size > 15 * 1024 * 1024) $('#vMeta').textContent += ' · 超过 15MB，先裁短';
+  if (file.size > 80 * 1024 * 1024) $('#vMeta').textContent += ' · 超过 80MB，先裁短';
   ev.target.value = '';
+
+  // 顺手读一下时长，ASR 不给时间戳时用它兜底
+  const el = document.createElement('video');
+  el.preload = 'metadata';
+  el.src = URL.createObjectURL(file);
+  el.onloadedmetadata = () => {
+    state.videoDuration = Math.round(el.duration || 0);
+    URL.revokeObjectURL(el.src);
+  };
 };
 
 $('#btnVideo').onclick = async () => {
   await ensureProduct(state.video ? state.video.name.replace(/\.[^.]+$/, '') : '');
   const out = $('#videoOut');
-  out.innerHTML = '<p class="muted">处理中…</p>';
+  out.innerHTML = '<p class="muted">上传视频…</p>';
   try {
-    const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'video', productId: state.current.id, params: { targetLang: $('#vLang').value, filename: state.video?.name || null } } });
+    // 先把文件传到服务端，识别时后端要拿到原始字节
+    if (state.video && !state.videoUrl) {
+      const res = await fetch(`/api/uploads?productId=${encodeURIComponent(state.current.id)}`, {
+        method: 'POST',
+        headers: { 'content-type': state.video.type || 'video/mp4' },
+        body: state.video,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || '上传失败');
+      state.videoUrl = data.url;
+    }
+    out.innerHTML = '<p class="muted">转写 + 翻译中…（1 分钟视频约 40–90 秒）</p>';
+    const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'video', productId: state.current.id, params: { targetLang: $('#vLang').value, fileUrl: state.videoUrl || null, duration: state.videoDuration || null, filename: state.video?.name || null } } });
     const result = await jobPromise(jobId);
     const rows = (result.subtitles || []).map((s) => `<tr><td style="width:88px;color:#8b9bad">${s.start}–${s.end}s</td><td>${esc(s.text)}</td></tr>`).join('');
     out.innerHTML = `<h3>结果</h3><div class="muted">${result.videoUrl ? '成片已生成' : 'mock：只出字幕，不出成片（不做 lip sync）'}</div><h3>字幕</h3><table>${rows}</table>`;
@@ -783,6 +805,56 @@ function esc(s) {
 
 /* ---------------- 启动 ---------------- */
 
+/* ---------------- 模型接入状态 ---------------- */
+
+const CAP_LABEL = { text: '文案', image: '出图', asr: '语音识别' };
+const CAP_HINT = {
+  text: 'TEXT_BASE_URL / TEXT_API_KEY / TEXT_MODEL',
+  image: 'IMAGE_BASE_URL / IMAGE_API_KEY / IMAGE_MODEL',
+  asr: 'ASR_BASE_URL / ASR_API_KEY / ASR_MODEL',
+};
+
+async function loadMeta() {
+  const box = $('#providers');
+  if (!box) return;
+  try {
+    const { providers } = await api('/api/meta');
+    box.innerHTML = providers.caps
+      .map((c) => {
+        const state = providers.mock
+          ? '<span class="chip-state off">mock</span>'
+          : c.configured
+            ? '<span class="chip-state on">已接</span>'
+            : '<span class="chip-state off">未配置</span>';
+        const detail = c.configured
+          ? `${esc(c.model || '（没写模型名）')} · ${esc(c.baseUrl)}`
+          : `缺 ${esc((c.missing || []).join(' / '))}`;
+        return `<li class="pv" data-cap="${c.name}">
+          <div class="pv-main">
+            <strong>${CAP_LABEL[c.name] || c.name}</strong>${state}
+            <div class="pv-detail">${detail}</div>
+          </div>
+          <button class="ctl pv-check" type="button" data-cap="${c.name}">自检</button>
+          <span class="pv-out note"></span>
+        </li>`;
+      })
+      .join('');
+    box.querySelectorAll('.pv-check').forEach((btn) => {
+      btn.onclick = async () => {
+        const out = btn.parentElement.querySelector('.pv-out');
+        out.textContent = '测试中…';
+        const cap = btn.dataset.cap.toUpperCase();
+        const r = await api('/api/meta/check', { method: 'POST', body: { cap } });
+        out.textContent = r.ok ? `通 · ${r.ms}ms · ${r.model || ''}` : `失败：${r.error}`;
+      };
+    });
+  } catch (e) {
+    box.innerHTML = `<li class="pv"><div class="pv-main">读不到状态：${esc(e.message)}</div></li>`;
+  }
+}
+
+/* ---------------- 启动 ---------------- */
+
 (async function boot() {
   renderEndpoints();
   buildPlatformMenu();
@@ -799,4 +871,5 @@ function esc(s) {
     el.classList.add('bad');
   }
   await loadProducts();
+  loadMeta();
 })();

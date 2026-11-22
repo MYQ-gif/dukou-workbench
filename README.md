@@ -56,8 +56,18 @@ data/             运行时数据（db.json + uploads/），不进 git
 ## 模式
 
 - 默认 `AI_MOCK=1`：全部走假数据，链路能跑通（出的是占位图，文案是模板）。
-- 接真模型：`.env` 里配 `AI_MOCK=0` + `AI_BASE_URL` + `AI_API_KEY` + 模型名。
-  key 只在本机，**永不入库、永不进前端**。
+- 接真模型：复制 `.env.example` 成 `.env`，把 `AI_MOCK` 改成 `0`，三条链路各自填 key：
+
+  ```ini
+  TEXT_BASE_URL / TEXT_API_KEY / TEXT_MODEL      # 文案，默认 DeepSeek
+  IMAGE_BASE_URL / IMAGE_API_KEY / IMAGE_MODEL   # 出图，默认硅基流动 Kolors
+  ASR_BASE_URL / ASR_API_KEY / ASR_MODEL         # 语音识别，默认 SenseVoiceSmall
+  ```
+
+  重启后打开「接口」页，顶部三行会显示每条链路「已接 / 未配置」，点「自检」当场测通断。
+  命令行版：`node scripts/aitest.mjs`。逐步说明见 [`docs/接入AI.md`](docs/接入AI.md)。
+
+  key 只在本机 `.env`，**永不入库、永不进前端、永不贴群**。
 
 ## 接口速查
 
@@ -73,6 +83,8 @@ data/             运行时数据（db.json + uploads/），不进 git
 | GET | `/api/jobs/:id` | 查进度（前端 1.2s 轮询） |
 | POST | `/api/ledger` | 记一笔 |
 | GET | `/api/ledger` | 账目 + 汇总 |
+| GET | `/api/meta` | 三条链路配没配好、用的哪个模型 |
+| POST | `/api/meta/check` | 单链路自检（`{cap:"TEXT"}`） |
 
 细节字段见 [`CONTRACT.md`](CONTRACT.md)。
 

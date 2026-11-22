@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 import * as jobs from './lib/jobs.mjs';
 import * as ledger from './lib/ledger.mjs';
-import { mode as aiMode } from './lib/ai.mjs';
+import * as providers from './lib/providers.mjs';
+import { mode as aiMode, providerStatus } from './lib/ai.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
@@ -19,7 +20,21 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const PORT = Number(process.env.PORT || 8787);
 const MAX_UPLOAD = 15 * 1024 * 1024;
+const MAX_MEDIA = 80 * 1024 * 1024;
 const VERSION = '1.0.0';
+
+// 视频/音频上传的扩展名映射（前端 upload 用 File.type 作为 content-type）
+const MEDIA_EXT = {
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'video/webm': 'webm',
+  'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/x-m4a': 'm4a',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/aac': 'aac',
+};
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -154,6 +169,26 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, version: VERSION, aiMode: aiMode() });
     }
 
+    /* ---- 1b. 模型供应商状态 ---- */
+    if (m === 'GET' && p === '/api/meta') {
+      return send(res, 200, {
+        version: VERSION,
+        counts: { products: db.products.length, assets: db.assets.length, jobs: db.jobs.length },
+        providers: providerStatus(),
+      });
+    }
+
+    if (m === 'POST' && p === '/api/meta/check') {
+      const body = await readJSON(req).catch(() => ({}));
+      const cap = String(body.cap || 'TEXT').toUpperCase();
+      try {
+        const result = await providers.check(cap);
+        return send(res, 200, { ok: true, cap, ...result });
+      } catch (err) {
+        return send(res, 200, { ok: false, cap, error: err.message });
+      }
+    }
+
     /* ---- 2. POST /api/products ---- */
     if (m === 'POST' && p === '/api/products') {
       const body = await readJSON(req);
@@ -222,12 +257,16 @@ const server = http.createServer(async (req, res) => {
     /* ---- 6. POST /api/uploads ---- */
     if (m === 'POST' && p === '/api/uploads') {
       const contentType = String(req.headers['content-type'] || '');
-      if (!/^image\//.test(contentType)) {
-        return fail(res, 400, 'BAD_REQUEST', 'content-type must be image/*');
+      const isImage = /^image\//.test(contentType);
+      const isMedia = /^(video|audio)\//.test(contentType);
+      if (!isImage && !isMedia) {
+        return fail(res, 400, 'BAD_REQUEST', 'content-type must be image/*, video/* or audio/*');
       }
-      const buf = await readBody(req, MAX_UPLOAD);
+      const buf = await readBody(req, isMedia ? MAX_MEDIA : MAX_UPLOAD);
       if (!buf.length) return fail(res, 400, 'BAD_REQUEST', 'empty body');
-      const { width, height, ext } = imageSize(buf);
+      const { width, height, ext } = isImage
+        ? imageSize(buf)
+        : { width: 0, height: 0, ext: MEDIA_EXT[contentType.split(';')[0].trim()] || 'bin' };
       const assetId = id('a');
       const filename = `${assetId}.${ext}`;
       fs.writeFileSync(path.join(UPLOAD_DIR, filename), buf);
