@@ -1,4 +1,4 @@
-# CONTRACT · 渡口 (Dukou) API 契约 v1
+﻿# CONTRACT · 渡口 (Dukou) API 契约 v1
 
 > 冻结时间：2026-11-21。**任何人要改这份文件，必须先开 PR 说明原因，三人同意后才能改。**
 > 前端、后端、AI 链路都以本文件为唯一事实来源。
@@ -48,7 +48,7 @@
 {
   "id": "a_1",
   "productId": "p_8f2a",
-  "kind": "upload | main | marketing | detail | copy | video | subtitle",
+  "kind": "upload | main | marketing | detail | copy | video | subtitle | clip",
   "url": "/files/abc.jpg",
   "width": 1242,
   "height": 1660,
@@ -78,7 +78,7 @@
 ```json
 {
   "id": "j_31c9",
-  "type": "image | video | copy",
+  "type": "image | video | copy | clip",
   "productId": "p_8f2a",
   "status": "queued | running | done | failed | canceled",
   "progress": 0,
@@ -92,6 +92,7 @@
 - `type=image` → result: `{ "assets": ["a_2","a_3"] }`
 - `type=video` → result: `{ "videoUrl": "/files/x.mp4", "subtitles": [{ "start": 0.0, "end": 2.4, "text": "…" }], "lang": "en" }`
 - `type=copy` → result: `{ "title": "…", "bullets": ["…"], "detail": "…", "lang": "en" }`
+- `type=clip` → result: `{ "assets": ["a_9"], "clipUrl": "/files/a_9.mp4", "note": "Seedance 出片 5s · 38s 生成" }`（mock 时 `clipUrl: null` + `posterUrl` 首帧）
 
 ### LedgerEntry（账目）
 
@@ -186,6 +187,7 @@
   - `params.quality ∈ 1k|2k|4k`，输出尺寸 = 基准 × (1 / 1.5 / 2)
 - `type=video`：`params.fileUrl`（先 `/api/uploads` 传上来的 `/files/x.mp4`）、`params.targetLang`、可选 `params.duration`（秒，ASR 不给时间戳时兜底）
 - `type=copy`：`params.lang`，可选 `params.style`
+- `type=clip`：`params.prompt`（画面描述，可不传）、`params.duration ∈ 5|10`、`params.resolution ∈ 480p|720p|1080p`、可选 `params.imageUrl`（首帧，不传就用该商品最后一张上传图）、可选 `params.cameraFixed`
 
 > `video` 结果：`{ lang, videoUrl: null, srtUrl, assetId, subtitles: [{start,end,text}], note }`。只出字幕轨，不做口型同步。
 
@@ -234,3 +236,4 @@
 |------|------|------|--------|
 | 2026-11-21 | v1.1 | `platform` 扩到 8 个平台并决定出图尺寸；文案产物存成 `kind=copy` 的 Asset 进仓库 | 主人 |
 | 2026-11-21 | v1 | 首版冻结 | 主人 |
+| 2026-11-22 | v1.2 | 新增 type=clip（Seedance 商品短视频，异步 1–3 分钟）与 kind=clip 资产；/api/jobs 白名单同步 | 主人 |

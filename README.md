@@ -1,4 +1,4 @@
-# 渡口 · 出海工作台（黑客松 S3 参赛作品）
+﻿# 渡口 · 出海工作台（黑客松 S3 参赛作品）
 
 一个人做跨境电商的辅助工作台：**拍一张图 → 出套图 → 出文案 → 上架 → 记账**。
 
@@ -55,17 +55,18 @@ data/             运行时数据（db.json + uploads/），不进 git
 
 ## 模式
 
-- 默认 `AI_MOCK=1`：全部走假数据，链路能跑通（出的是占位图，文案是模板）。
-- 接真模型：复制 `.env.example` 成 `.env`，把 `AI_MOCK` 改成 `0`，三条链路各自填 key：
+- 默认 `AI_MOCK=1`：全部走假数据，链路能跑通（出的是占位图，文案是模板，短视频只出首帧）。
+- 接真模型：复制 `.env.example` 成 `.env`，把 `AI_MOCK` 改成 `0`，四条链路各自填 key：
 
   ```ini
   TEXT_BASE_URL / TEXT_API_KEY / TEXT_MODEL      # 文案，默认 DeepSeek
   IMAGE_BASE_URL / IMAGE_API_KEY / IMAGE_MODEL   # 出图，默认硅基流动 Kolors
   ASR_BASE_URL / ASR_API_KEY / ASR_MODEL         # 语音识别，默认 SenseVoiceSmall
+  VIDEO_BASE_URL / VIDEO_API_KEY / VIDEO_MODEL   # 商品短视频，默认火山方舟 Seedance
   ```
 
-  重启后打开「接口」页，顶部三行会显示每条链路「已接 / 未配置」，点「自检」当场测通断。
-  命令行版：`node scripts/aitest.mjs`。逐步说明见 [`docs/接入AI.md`](docs/接入AI.md)。
+  重启后打开「接口」页，顶部会显示每条链路「已接 / 未配置」，点「自检」当场测通断。
+  命令行版：`node scripts/aitest.mjs`（另有 `node scripts/clipcheck.mjs` 专测短视频）。逐步说明见 [`docs/接入AI.md`](docs/接入AI.md)。
 
   key 只在本机 `.env`，**永不入库、永不进前端、永不贴群**。
 
@@ -79,7 +80,7 @@ data/             运行时数据（db.json + uploads/），不进 git
 | GET | `/api/products/:id` | 商品详情 |
 | PATCH | `/api/products/:id` | 更新商品 |
 | POST | `/api/uploads` | 上传图片（raw body） |
-| POST | `/api/jobs` | 建任务 image/copy/video |
+| POST | `/api/jobs` | 建任务 image/copy/video/clip |
 | GET | `/api/jobs/:id` | 查进度（前端 1.2s 轮询） |
 | POST | `/api/ledger` | 记一笔 |
 | GET | `/api/ledger` | 账目 + 汇总 |

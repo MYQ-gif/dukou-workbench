@@ -64,16 +64,25 @@ async function loadProducts(preferId) {
   await selectProduct(sel.value);
 }
 
+function assetTally(p) {
+  const list = p.assets || [];
+  const imgs = list.filter((a) => ['main', 'marketing', 'detail', 'sub'].includes(a.kind)).length;
+  const clips = list.filter((a) => a.kind === 'clip').length;
+  return [imgs ? `${imgs} 张图` : '', clips ? `${clips} 段视频` : ''].filter(Boolean).join(' · ') || '还没有产物';
+}
+
+function refreshMeta() {
+  const p = state.current;
+  if (!p) return;
+  $('#pMeta').textContent = [pf(p.platform).name, (p.targetLangs || []).join(' / '), assetTally(p)].filter(Boolean).join(' · ');
+}
+
 async function selectProduct(id) {
   state.current = await api(`/api/products/${id}`);
   const p = state.current;
   if (p.platform) setPlatform(p.platform, false);
   $('#hTitle').textContent = p.title;
-  $('#pMeta').textContent = [
-    pf(p.platform).name,
-    (p.targetLangs || []).join(' / '),
-    `${(p.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy').length} 张图`,
-  ].join(' · ');
+  refreshMeta();
   chatReset();
   loadLedger();
   renderWarehouse();
@@ -206,11 +215,15 @@ function chatReset() {
       'ai',
       `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，用上面那个下拉选它。'}</p>
      <p>选好平台，发一张商品原图再说要求——我出套图。</p>
-     <p class="muted-sm">常用的四件事，点一下就开工；前三个会把话填进输入框，改两个字再发：</p>
+     <p class="muted-sm">常用的几件事，点一下就开工；前几个会把话填进输入框，改两个字再发：</p>
        <div class="tiles">
          <button class="tile" type="button" data-fill="做一张白底主图，标题写 STAY A WHILE.">
            <span class="tile-t">出主图</span>
            <span class="tile-d">按平台尺寸出 1–6 张，带英文标题</span>
+         </button>
+         <button class="tile" type="button" data-fill="用这张商品图出一段 5 秒短视频，缓慢推近，暖光">
+           <span class="tile-t">出商品短视频</span>
+           <span class="tile-d">一张图生成 5 秒运镜，Seedance</span>
          </button>
          <button class="tile" type="button" data-fill="把这张图的卖点写成英文 listing 文案">
            <span class="tile-t">写 listing 文案</span>
@@ -268,7 +281,10 @@ async function ensureProduct(text, fileName) {
   if (state.current && !wantsNew) return state.current;
 
   const fallback = String(fileName || '').replace(/\.[^.]+$/, '');
-  const title = (explicit || (wantsNew ? '' : String(text || '').slice(0, 16)) || fallback || '新商品').trim();
+  const guess = String(text || '').slice(0, 16);
+  // 「用这张图…」「做一段…」这类是动作，不是商品名，别把整句话当标题
+  const looksLikeAction = /^(用|把|做|出|生成|来|给我|帮|按|这|那)/.test(guess.trim());
+  const title = (explicit || (wantsNew || looksLikeAction ? '' : guess) || fallback || '新商品').trim();
   const product = await api('/api/products', {
     method: 'POST',
     body: {
@@ -488,6 +504,9 @@ function askParams({ title, thumb, ask, known = {} }) {
 }
 
 const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
+// 提到短片/运镜就是出视频；但同时说「主图/详情」时仍按出图走
+const CLIP_WORDS = /视频|短片|短视频|运镜|动起来|片头/;
+const IMAGE_ONLY = /主图|详情图|白底图|海报|套图/;
 
 async function doImage(askText, opts) {
   const text = String(askText || '').trim();
@@ -529,7 +548,7 @@ async function doImage(askText, opts) {
     const fresh = (state.current.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy' && !before.has(a.id));
     const bubble = say(inner, 'ai', `<p>${fresh.length ? `出好了 ${fresh.length} 张，已放进仓库。` : '任务完成。'}</p>`);
     if (fresh.length) shots(bubble.querySelector('.bubble'), fresh);
-    $('#pMeta').textContent = $('#pMeta').textContent.replace(/\d+ 张图/, `${(state.current.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy').length} 张图`);
+    refreshMeta();
     if (state.whTab === 'image') renderWarehouse(); else renderWarehouse();
     state.lastUpload = null;
     state.lastUploadPreview = null;
@@ -537,6 +556,46 @@ async function doImage(askText, opts) {
   } catch (e) {
     box.done();
     say(inner, 'ai', `<p style="color:#f27e4c">出图失败：${esc(e.message)}</p>`);
+  }
+}
+
+async function doClip(askText) {
+  const text = String(askText || '').trim();
+  await ensureProduct(text, state.lastUploadName);
+  const inner = $('#chat .chat-inner');
+  const seconds = /10\s*秒|十\s*秒/.test(text) ? 10 : 5;
+  const thumb = state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : '';
+  say(
+    inner,
+    'user',
+    `${text ? `<p>${esc(text)}</p>` : ''}${thumb}<p class="meta-line">商品短视频 · ${seconds}s · 720p · Seedance</p>`,
+  );
+  const box = progressBubble('排队等 Seedance 出片…');
+  try {
+    const { jobId } = await api('/api/jobs', {
+      method: 'POST',
+      body: {
+        type: 'clip',
+        productId: state.current.id,
+        params: { prompt: text || undefined, duration: seconds, resolution: '720p', platform: state.platform, imageUrl: state.lastUploadUrl || null },
+      },
+    });
+    const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    box.done();
+    const bubble = say(inner, 'ai', '<p>视频好了。</p>');
+    const body = bubble.querySelector('.bubble');
+    if (result.clipUrl) {
+      body.insertAdjacentHTML('beforeend', `<video class="clip" src="${result.clipUrl}" controls playsinline preload="metadata"></video>`);
+    } else if (result.posterUrl) {
+      body.insertAdjacentHTML('beforeend', `<img class="thumb-lg" src="${result.posterUrl}" alt="首帧预览">`);
+    }
+    if (result.note) body.insertAdjacentHTML('beforeend', `<p class="muted-sm">${esc(result.note)}</p>`);
+    state.current = await api(`/api/products/${state.current.id}`);
+    refreshMeta();
+    renderWarehouse();
+  } catch (e) {
+    box.done();
+    say(inner, 'ai', `<p style="color:#f27e4c">出视频失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -689,6 +748,11 @@ $('#chat').addEventListener('click', (ev) => {
 $('#btnSend').onclick = async () => {
   const ask = $('#ask').value.trim();
   $('#ask').value = '';
+  // 先认「视频」：一句话里提到短片/运镜，就走 Seedance 出片
+  if (CLIP_WORDS.test(ask) && !IMAGE_ONLY.test(ask)) {
+    doClip(ask);
+    return;
+  }
   // 有图，或者话里明显是在要图 → 话里已经说清的参数不再问，只补没说的
   if (state.lastUpload || IMAGE_WORDS.test(ask) || !ask) {
     const known = readIntent(ask);

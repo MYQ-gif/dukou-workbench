@@ -1,4 +1,4 @@
-/* 渡口 · 出海工作台
+﻿/* 渡口 · 出海工作台
    风格：framed-sheet（外框一色 + 白纸一张，深度只来自一个色阶，不上阴影）
    品牌色沿用主人给的七色，只做角色分配：
      外框 #EDE7DA（奶油压深一档） / 纸 #FFFFFF / 墨 #0A2E5C / 链接 #1B6CA8
@@ -543,3 +543,7 @@ h1 { letter-spacing: -0.02em; }
 .chip-state.on { color: #0a6b3d; border-color: #bfe3cf; background: #eef7f1; }
 .chip-state.off { color: var(--muted); background: var(--frame); }
 .pv-out { min-width: 0; font-size: 12px; }
+
+/* 商品短视频（Seedance）与首帧预览 */
+.bubble .clip, .clip { display: block; max-width: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--rule); margin: 6px 0 4px; background: #000; }
+.bubble .thumb-lg, .thumb-lg { display: block; max-width: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--rule); margin: 6px 0 4px; }
