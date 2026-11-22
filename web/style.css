@@ -115,7 +115,7 @@ code { font: 13px/1.4 var(--mono); background: #f4f2ec; padding: 1px 5px; border
   display: flex; align-items: baseline; gap: 12px;
   padding: 20px 24px 0;
 }
-.screen-head h1 { font-size: 22px; line-height: 1.3; }
+.screen-head h1 { font-size: 24px; line-height: 1.25; letter-spacing: -0.022em; }
 .meta { margin: 0; font-size: 13px; color: var(--muted); }
 
 /* 下划线 tab：一条通栏 1px，指示线 2px */
@@ -174,7 +174,7 @@ input.ctl::placeholder { color: #9aa0a8; }
 }
 .btn-primary:hover { background: #0d3a72; }
 .btn-primary:disabled { background: #b6bcc4; cursor: default; }
-.link {
+.link { min-height: 24px; display: inline-flex; align-items: center;
   border: 0; background: none; padding: 0;
   color: var(--link); font: inherit; cursor: pointer;
 }
@@ -329,6 +329,7 @@ input.ctl::placeholder { color: #9aa0a8; }
   width: 384px; max-width: 92vw;
   background: var(--sheet);
   border-left: 1px solid var(--edge);
+  box-shadow: -10px 0 28px rgba(10, 46, 92, 0.08);
   display: flex; flex-direction: column;
 }
 .wh-head { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--rule); }
@@ -339,7 +340,7 @@ input.ctl::placeholder { color: #9aa0a8; }
   font: 13px/1 var(--font); color: var(--muted); cursor: pointer;
 }
 .wh-tab.active { background: #f1efe8; color: var(--ink); }
-.wh-head .link { margin-left: auto; font-size: 13px; }
+.wh-head .link { min-height: 24px; display: inline-flex; align-items: center; margin-left: auto; font-size: 13px; }
 .wh-body { flex: 1 1 auto; overflow: auto; padding: 16px; }
 .wh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .wh-item { margin: 0; }
@@ -465,4 +466,66 @@ input.ctl::placeholder { color: #9aa0a8; }
   .composer-row { row-gap: 8px; }
   #ask { order: -1; flex: 1 1 100%; }
   #btnSend { margin-left: auto; }
+}
+
+/* ================= 交互手感（emil / apple） ================= */
+:root {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --t-press: 120ms;
+  --t-state: 180ms;
+}
+
+/* 只过渡会变的属性，不用 all；按下有回应 */
+.btn-warehouse, .btn-attach, .btn-primary, .link, .starter, .chip, .tile, .tab, .wh-tab {
+  transition:
+    transform var(--t-press) var(--ease-out),
+    background-color var(--t-state) var(--ease-out),
+    border-color var(--t-state) var(--ease-out),
+    color var(--t-state) var(--ease-out);
+}
+.btn-warehouse:active, .btn-attach:active, .btn-primary:active,
+.starter:active, .chip:active, .tile:active, .wh-tab:active { transform: scale(.97); }
+.tile:active { transform: scale(.985); }
+.btn-primary:disabled:active { transform: none; }
+
+/* 悬停只在有真指针的设备上生效，触屏不粘 */
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover { border-color: #c9c3b4; }
+  .starter:hover, .chip:hover { border-color: var(--link); }
+  .btn-primary:hover { background: #0d3a72; }
+}
+
+/* 仓库滑入：从右侧进来，260ms，iOS 抽屉曲线 */
+.wh { will-change: transform; }
+.wh:not(.hidden) { animation: whIn 260ms var(--ease-drawer) both; }
+.wh-mask:not(.hidden) { animation: maskIn 200ms var(--ease-out) both; }
+@keyframes whIn { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes maskIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 空状态四入口依次进场，40ms 递进，只在首次出现时播 */
+.tiles .tile { animation: tileIn 220ms var(--ease-out) both; }
+.tiles .tile:nth-child(2) { animation-delay: 40ms; }
+.tiles .tile:nth-child(3) { animation-delay: 80ms; }
+.tiles .tile:nth-child(4) { animation-delay: 120ms; }
+@keyframes tileIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* 进度条用线性，符合“持续运动”的语义 */
+.progress .bar i { transition: width 240ms linear; }
+
+/* 标题负字距、数字等宽 */
+h1 { letter-spacing: -0.02em; }
+.meta, .stat-value, .shots figcaption, .ep .path, .ep .method { font-variant-numeric: tabular-nums; }
+
+/* 降低动态：只留淡入，不位移 */
+@media (prefers-reduced-motion: reduce) {
+  .wh:not(.hidden), .wh-mask:not(.hidden), .tiles .tile { animation: none !important; }
+  .btn-warehouse:active, .btn-attach:active, .btn-primary:active,
+  .starter:active, .chip:active, .tile:active, .wh-tab:active { transform: none; }
+}
+
+/* 减少透明偏好：遮罩更实 */
+@media (prefers-reduced-transparency: reduce) {
+  .wh-mask { background: rgba(10, 46, 92, 0.42); }
 }
