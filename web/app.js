@@ -871,7 +871,7 @@ function esc(s) {
 
 /* ---------------- 模型接入状态 ---------------- */
 
-const CAP_LABEL = { text: '文案', image: '出图', asr: '语音识别' };
+const CAP_LABEL = { text: '文案', image: '出图', asr: '语音识别', video: '商品短视频' };
 const CAP_HINT = {
   text: 'TEXT_BASE_URL / TEXT_API_KEY / TEXT_MODEL',
   image: 'IMAGE_BASE_URL / IMAGE_API_KEY / IMAGE_MODEL',
