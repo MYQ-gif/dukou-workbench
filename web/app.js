@@ -1,4 +1,4 @@
-﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
+// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -38,7 +38,8 @@ async function loadProducts(preferId) {
   state.products = items;
   const sel = $('#prodSel');
   sel.innerHTML = items.length
-    ? items.map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join('')
+    ? `<option value="">选择商品…</option>` +
+      items.map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join('')
     : '<option value="">还没有商品</option>';
   if (!items.length) {
     state.current = null;
@@ -47,7 +48,18 @@ async function loadProducts(preferId) {
     chatReset();
     return;
   }
-  const target = preferId || state.current?.id || items[0].id;
+  const target = preferId || (state.current?.id && items.some((p) => p.id === state.current.id) ? state.current.id : null);
+  if (!target) {
+    // 进来不替用户选商品：有商品也先停在入口页，等他挑一个或直接说一句话
+    state.current = null;
+    sel.value = '';
+    $('#hTitle').textContent = '还没有选择商品';
+    $('#pMeta').textContent = items.length ? `已有 ${items.length} 个商品，下拉选一个，或直接说一句新建` : '发张图或说句话就开始';
+    chatReset();
+    loadLedger();
+    renderWarehouse();
+    return;
+  }
   sel.value = items.find((p) => p.id === target) ? target : items[0].id;
   await selectProduct(sel.value);
 }
@@ -188,12 +200,12 @@ function chatReset() {
   const p = state.current;
   const hist = loadHistory();
   for (const m of hist) say(inner, m.who, m.html, { persist: false });
-  if (!hist.length && p) {
+  if (!hist.length) {
     say(
       inner,
       'ai',
-      `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没商品，直接发图或者说话就行，我会自动开一个。'}</p>
-     <p>选好平台，发一张商品原图再说要求——我出套图。想换商品就说「新建商品：名字」。</p>
+      `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，用上面那个下拉选它。'}</p>
+     <p>选好平台，发一张商品原图再说要求——我出套图。</p>
      <p class="muted-sm">常用的四件事，点一下就开工；前三个会把话填进输入框，改两个字再发：</p>
        <div class="tiles">
          <button class="tile" type="button" data-fill="做一张白底主图，标题写 STAY A WHILE.">
