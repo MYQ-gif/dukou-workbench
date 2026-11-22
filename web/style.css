@@ -1,4 +1,4 @@
-/* 渡口 · 出海工作台
+﻿/* 渡口 · 出海工作台
    风格：framed-sheet（外框一色 + 白纸一张，深度只来自一个色阶，不上阴影）
    品牌色沿用主人给的七色，只做角色分配：
      外框 #EDE7DA（奶油压深一档） / 纸 #FFFFFF / 墨 #0A2E5C / 链接 #1B6CA8
@@ -420,3 +420,49 @@ input.ctl::placeholder { color: #9aa0a8; }
 .thumb { display: block; width: 120px; height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid var(--rule); margin: 6px 0 2px; }
 .msg.user .thumb { margin-left: auto; }
 .bubble img { max-width: 100%; }
+
+/* ---------- 焦点与无障碍 ---------- */
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.tab:focus-visible, .chip:focus-visible, .starter:focus-visible { outline-offset: 3px; }
+
+.ai-note { font-size: 12px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+}
+
+@media (max-width: 720px) {
+  .tab { min-height: 44px; display: inline-flex; align-items: center; }
+  .chip, .ctl, .btn-attach { min-height: 40px; }
+}
+/* ---------- 空对话里的三件事（可点，填进输入框） ---------- */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0 2px; max-width: 620px; }
+.tile {
+  appearance: none; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+}
+.tile:hover { border-color: #c9c3b4; }
+.tile-t { font-size: 14px; font-weight: 600; }
+.tile-d { font-size: 12px; line-height: 1.5; color: var(--muted); }
+@media (max-width: 640px) { .tiles { grid-template-columns: 1fr; } }
+
+/* 手机端：顶栏一行放下，输入条按「先输入、后控件」排 */
+@media (max-width: 720px) {
+  .topbar { gap: 8px; padding: 0 16px; }
+  .brand-sub { display: none; }
+  .brand-name { white-space: nowrap; }
+  .btn-warehouse { white-space: nowrap; padding: 0 8px; }
+  .health { font-size: 11px; white-space: nowrap; }
+  .composer-row { row-gap: 8px; }
+  #ask { order: -1; flex: 1 1 100%; }
+  #btnSend { margin-left: auto; }
+}

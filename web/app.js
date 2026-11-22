@@ -1,4 +1,4 @@
-// 前端逻辑 —— 原生 ES Module，无框架、无构建
+﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -186,25 +186,32 @@ function chatReset() {
   box.innerHTML = '<div class="chat-inner"></div>';
   const inner = box.querySelector('.chat-inner');
   const p = state.current;
-  say(
-    inner,
-    'ai',
-    `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没商品，直接发图或者说话就行，我会自动开一个。'}</p>
-     <p>选好平台，发一张商品原图再说要求——我出套图。想换商品就说「新建商品：名字」。</p>
-     <p class="muted-sm">出好的图和文案会落进右上角的「仓库」，随时翻。</p>`,
-    { persist: false }
-  );
-  for (const m of loadHistory()) say(inner, m.who, m.html, { persist: false });
-  if (!loadHistory().length && p) {
+  const hist = loadHistory();
+  for (const m of hist) say(inner, m.who, m.html, { persist: false });
+  if (!hist.length && p) {
     say(
       inner,
       'ai',
-      `<p class="muted-sm">没想好怎么开口，先点一句，改改再发：</p>
-       <div class="starters">
-         <button class="starter" data-fill="做一张白底主图，标题写 STAY A WHILE.">白底主图 + 一句英文标题</button>
-         <button class="starter" data-fill="按这套家具出一组三张详情页，讲老木的来历">三张详情页，讲来历</button>
-         <button class="starter" data-fill="把上面这套图的卖点写成英文 listing 文案">把这套图写成 listing 文案</button>
-         <button class="starter" data-fill="换成泰语，标题短一点">换泰语，标题短一点</button>
+      `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没商品，直接发图或者说话就行，我会自动开一个。'}</p>
+     <p>选好平台，发一张商品原图再说要求——我出套图。想换商品就说「新建商品：名字」。</p>
+     <p class="muted-sm">常用的四件事，点一下就开工；前三个会把话填进输入框，改两个字再发：</p>
+       <div class="tiles">
+         <button class="tile" type="button" data-fill="做一张白底主图，标题写 STAY A WHILE.">
+           <span class="tile-t">出主图</span>
+           <span class="tile-d">按平台尺寸出 1–6 张，带英文标题</span>
+         </button>
+         <button class="tile" type="button" data-fill="把这张图的卖点写成英文 listing 文案">
+           <span class="tile-t">写 listing 文案</span>
+           <span class="tile-d">标题 + 三条卖点 + 一段描述，可直接复制</span>
+         </button>
+         <button class="tile" type="button" data-fill="把这段口播视频翻成泰语字幕">
+           <span class="tile-t">翻视频字幕</span>
+           <span class="tile-d">保留原声，出目标语言字幕轨</span>
+         </button>
+         <button class="tile" type="button" data-tab="ledger">
+           <span class="tile-t">记一笔账</span>
+           <span class="tile-d">收入、运费、广告，随手记，随时看利润</span>
+         </button>
        </div>`,
       { persist: false }
     );
@@ -660,7 +667,7 @@ $('#file').onchange = async (ev) => {
 };
 
 $('#chat').addEventListener('click', (ev) => {
-  const chip = ev.target.closest('.starter');
+  const chip = ev.target.closest('.starter, .tile');
   if (!chip) return;
   $('#ask').value = chip.dataset.fill || chip.textContent;
   $('#ask').focus();

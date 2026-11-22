@@ -1,4 +1,4 @@
-# 运行时数据与本地密钥，不进仓库
+﻿# 运行数据、本地密钥、编辑器缓存，不进仓库
 data/
 .env
 *.log
@@ -8,3 +8,6 @@ data/
 .idea/
 .DS_Store
 Thumbs.db
+
+# 截图检查产物（本地保留，不提交）
+.taste-skill/round*/
