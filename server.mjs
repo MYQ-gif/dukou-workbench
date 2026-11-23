@@ -1,4 +1,4 @@
-// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
+﻿// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
 // 规矩：零依赖，只 import Node 内置模块 + 本地 lib。
 // 契约见 CONTRACT.md，任何字段改动先改契约再改代码。
 import http from 'node:http';
@@ -299,8 +299,8 @@ const server = http.createServer(async (req, res) => {
     if (m === 'POST' && p === '/api/jobs') {
       const body = await readJSON(req);
       const type = body.type;
-      if (!['image', 'video', 'copy', 'clip'].includes(type)) {
-        return fail(res, 400, 'BAD_REQUEST', 'type must be image|video|copy|clip');
+      if (!['image', 'video', 'copy', 'clip', 'visual'].includes(type)) {
+        return fail(res, 400, 'BAD_REQUEST', 'type must be image|video|copy|clip|visual');
       }
       if (!body.productId || !db.products.find((x) => x.id === body.productId)) {
         return fail(res, 400, 'BAD_REQUEST', 'productId is required and must exist');

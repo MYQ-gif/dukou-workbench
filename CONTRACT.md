@@ -48,7 +48,7 @@
 {
   "id": "a_1",
   "productId": "p_8f2a",
-  "kind": "upload | main | marketing | detail | copy | video | subtitle | clip",
+  "kind": "upload | refined | angle | angle_real | main | marketing | detail | copy | video | subtitle | clip",
   "url": "/files/abc.jpg",
   "width": 1242,
   "height": 1660,
@@ -93,6 +93,7 @@
 - `type=video` → result: `{ "videoUrl": "/files/x.mp4", "subtitles": [{ "start": 0.0, "end": 2.4, "text": "…" }], "lang": "en" }`
 - `type=copy` → result: `{ "title": "…", "bullets": ["…"], "detail": "…", "lang": "en" }`
 - `type=clip` → result: `{ "assets": ["a_9"], "clipUrl": "/files/a_9.mp4", "note": "Seedance 出片 5s · 38s 生成" }`（mock 时 `clipUrl: null` + `posterUrl` 首帧）
+- `type=visual` → result: `{ "assets": ["a_1","a_2","a_3","a_4","a_5"], "spec": { "version": 1, "lighting": "…", "palette": {…} }, "analysis": { …8 项… }, "plan": { "generate": ["front","deg45","side_right"], "skip": [] } }`
 
 ### LedgerEntry（账目）
 
@@ -188,6 +189,7 @@
 - `type=video`：`params.fileUrl`（先 `/api/uploads` 传上来的 `/files/x.mp4`）、`params.targetLang`、可选 `params.duration`（秒，ASR 不给时间戳时兜底）
 - `type=copy`：`params.lang`，可选 `params.style`
 - `type=clip`：`params.prompt`（画面描述，可不传）、`params.duration ∈ 5|10`、`params.resolution ∈ 480p|720p|1080p`、可选 `params.imageUrl`（首帧，不传就用该商品最后一张上传图）、可选 `params.cameraFixed`
+- `type=visual`：备料任务。`params.platform`、`params.brief`（`{usage, market, selling}`，全部可空）、`params.realAngles`（用户已上传的实拍角度数组，可空）。产物：`kind=refined`（`meta.crop ∈ 1:1|3:4`）+ `kind=angle`（`meta.angle`）+ `product.visualSpec`；result 为 `{ assets, spec, analysis, plan:{generate,skip}, errors }`
 
 > `video` 结果：`{ lang, videoUrl: null, srtUrl, assetId, subtitles: [{start,end,text}], note }`。只出字幕轨，不做口型同步。
 
