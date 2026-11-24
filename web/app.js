@@ -1128,7 +1128,7 @@ async function doImage(askText, opts) {
     $('#attachInfo').textContent = '未附图片';
   } catch (e) {
     box.done();
-    say(inner, 'ai', `<p style="color:#f27e4c">出图失败：${esc(e.message)}</p>`);
+    say(inner, 'ai', `<p class="err">出图失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -1168,7 +1168,7 @@ async function doClip(askText) {
     renderWarehouse();
   } catch (e) {
     box.done();
-    say(inner, 'ai', `<p style="color:#f27e4c">出视频失败：${esc(e.message)}</p>`);
+    say(inner, 'ai', `<p class="err">出视频失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -1190,7 +1190,7 @@ async function doCopy() {
     renderWarehouse();
   } catch (e) {
     box.done();
-    say(inner, 'ai', `<p style="color:#f27e4c">失败：${esc(e.message)}</p>`);
+    say(inner, 'ai', `<p class="err">失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -1252,7 +1252,7 @@ async function doGeo(askText) {
     renderWarehouse();
   } catch (e) {
     box.done();
-    say(inner, 'ai', `<p style="color:#f27e4c">做内容资产失败：${esc(e.message)}</p>`);
+    say(inner, 'ai', `<p class="err">做内容资产失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -1296,7 +1296,7 @@ async function doDetail(askText) {
     renderWarehouse();
   } catch (e) {
     box.done();
-    say(inner, 'ai', `<p style="color:#f27e4c">出详情页失败：${esc(e.message)}</p>`);
+    say(inner, 'ai', `<p class="err">出详情页失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -1334,7 +1334,7 @@ async function doInquiry(rawText) {
     renderWarehouse();
   } catch (e) {
     box.done();
-    say(inner, 'ai', `<p style="color:#f27e4c">解析失败：${esc(e.message)}</p>`);
+    say(inner, 'ai', `<p class="err">解析失败：${esc(e.message)}</p>`);
   }
 }
 
@@ -1347,7 +1347,7 @@ async function loadLedger() {
       <div class="stat"><div class="stat-label">收入</div><div class="stat-value">0.00<span class="stat-unit">CNY</span></div></div>
       <div class="stat"><div class="stat-label">成本</div><div class="stat-value cost">0.00<span class="stat-unit">CNY</span></div></div>
       <div class="stat"><div class="stat-label">利润</div><div class="stat-value">0.00<span class="stat-unit">CNY</span></div></div>`;
-    $('#ledgerList').innerHTML = '<li style="grid-template-columns:1fr;color:#6b7280">还没有商品。先去「生图」发一张图或说一句话，账目会记在那个商品下面。</li>';
+    $('#ledgerList').innerHTML = '<li class="hint-row">还没有商品。先去「生图」发一张图或说一句话，账目会记在那个商品下面。</li>';
     return;
   }
   const data = await api(`/api/ledger?productId=${state.current.id}`);
@@ -1359,7 +1359,7 @@ async function loadLedger() {
   const ul = $('#ledgerList');
   ul.innerHTML = '';
   if (!data.items.length) {
-    ul.innerHTML = '<li style="grid-template-columns:1fr;color:#6b7280">还没有账目。卖出一单记一笔收入，运费广告也记上，利润才是真的。</li>';
+    ul.innerHTML = '<li class="hint-row">还没有账目。卖出一单记一笔收入，运费广告也记上，利润才是真的。</li>';
     return;
   }
   for (const e of data.items) {
@@ -1553,10 +1553,10 @@ $('#btnVideo').onclick = async () => {
     out.innerHTML = '<p class="muted">转写 + 翻译中…（1 分钟视频约 40–90 秒）</p>';
     const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'video', productId: state.current.id, params: { targetLang: $('#vLang').value, fileUrl: state.videoUrl || null, duration: state.videoDuration || null, filename: state.video?.name || null } } });
     const result = await jobPromise(jobId);
-    const rows = (result.subtitles || []).map((s) => `<tr><td style="width:88px;color:#8b9bad">${s.start}–${s.end}s</td><td>${esc(s.text)}</td></tr>`).join('');
+    const rows = (result.subtitles || []).map((s) => `<tr><td class="ts">${s.start}–${s.end}s</td><td>${esc(s.text)}</td></tr>`).join('');
     out.innerHTML = `<h3>结果</h3><div class="muted">${result.videoUrl ? '成片已生成' : 'mock：只出字幕，不出成片（不做 lip sync）'}</div><h3>字幕</h3><table>${rows}</table>`;
   } catch (e) {
-    out.innerHTML = `<p style="color:#f27e4c">失败：${esc(e.message)}</p>`;
+    out.innerHTML = `<p class="err">失败：${esc(e.message)}</p>`;
   }
 };
 

@@ -1,0 +1,24 @@
+﻿import fs from 'node:fs';
+const CDP='http://127.0.0.1:9334';
+const list=await (await fetch(`${CDP}/json/list`)).json();
+const page=list.find(t=>t.type==='page'&&/8787/.test(t.url));
+const ws=new WebSocket(page.webSocketDebuggerUrl);
+await new Promise(r=>ws.onopen=r);
+let id=0;const pending=new Map();
+ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id&&pending.has(m.id)){pending.get(m.id)(m);pending.delete(m.id);}};
+const send=(method,params={})=>new Promise(res=>{const i=++id;pending.set(i,res);ws.send(JSON.stringify({id:i,method,params}));});
+const ev=async x=>(await send('Runtime.evaluate',{expression:x,awaitPromise:true,returnByValue:true})).result?.result?.value;
+const shot=async f=>{const r=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(f,Buffer.from(r.result.data,'base64'));console.log('saved',f);};
+await send('Network.setCacheDisabled',{cacheDisabled:true});
+await ev(`localStorage.setItem('dukou:theme','dark'); location.reload(); true`);
+await new Promise(r=>setTimeout(r,2600));
+// 选有数据的商品
+await ev(`(()=>{const s=document.querySelector('#prodSel'); const o=[...s.options].find(o=>o.value); if(o){s.value=o.value; s.dispatchEvent(new Event('change')); return s.value} return null})()`);
+await new Promise(r=>setTimeout(r,1200));
+await ev(`document.querySelector('.tab[data-tab="ledger"]').click(); true`);
+await new Promise(r=>setTimeout(r,900));
+await shot('docs/preview-dark-ledger.png');
+await ev(`document.querySelector('.tab[data-tab="api"]').click(); true`);
+await new Promise(r=>setTimeout(r,900));
+await shot('docs/preview-dark-api.png');
+ws.close();

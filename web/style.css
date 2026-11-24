@@ -1146,3 +1146,107 @@ html.vt { will-change: clip-path; }
 .pd, .wh-item.removing, .tile { will-change: auto; }
 .pd:not(.hidden) { will-change: clip-path; }
 .wh-item.removing { will-change: clip-path, opacity; }
+
+/* ===== 第十六轮：语义色 + 深色对比度校正 ===== */
+:root {
+  --ok: #0f7a52;
+  --bad: #c81f38;
+  --info: #1f46d8;
+  --amber: #c96a1b;
+}
+html[data-theme='dark'] {
+  --ok: #4cd99b;
+  --bad: #ff8790;
+  --info: #a9bcff;
+  --amber: #ffb072;
+  --muted: #b9b09c;      /* 提亮：原来 #948d7e 在 #221f1a 上只有约 4.1:1 */
+  --rule: #3a362f;
+  --edge: #57524a;
+}
+/* 通用文本类，替掉原先写死的行内颜色 */
+.err { color: var(--bad); }
+.hint-row { grid-template-columns: 1fr; color: var(--muted); }
+.ts { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* 数字与状态上色：收入绿、成本红、利润墨色 */
+.stat-value { color: var(--ink); }
+.stat-value.cost { color: var(--bad); }
+.stat-value.profit { color: var(--ok); }
+.ledger li .plus, .amt.plus { color: var(--ok); }
+.ledger li .minus, .amt.minus { color: var(--bad); }
+
+/* 分组标题、分组分隔用信息蓝，跟黑白拉开层次 */
+.pf-group, .wh-group, .sub-h { color: var(--info); }
+.pf-group { border-top-color: var(--edge); }
+
+/* 计数徽标用蓝底白字，深色下也清楚 */
+.count { background: var(--info) !important; color: #fff !important; border-color: #0b0b0b; }
+
+/* 健康状态点：在线绿、mock 橙 */
+.health .dot { background: var(--ok) !important; }
+.health.is-mock .dot { background: var(--amber) !important; }
+
+/* 仓库角标与选中态 */
+.chip-real, .chip-ref { color: var(--info); border-color: var(--info); }
+.pick.on, .wh-item.picked { border-color: var(--info) !important; }
+.tick { background: var(--info) !important; }
+
+/* 风险条：红字 + 左侧红条 */
+.risks li, .risk-row { color: var(--bad); }
+.reply summary { color: var(--info); }
+
+/* 下拉里当前项（黄底）文字固定深色，两套主题都读得清 */
+.pf-item.on, .pf-item.on .pf-dim { color: #0b0b0b !important; }
+
+/* 输入框占位与次要文字在深色下提亮 */
+html[data-theme='dark'] input::placeholder, html[data-theme='dark'] textarea::placeholder { color: #9b9385; }
+html[data-theme='dark'] .muted-sm, html[data-theme='dark'] .meta, html[data-theme='dark'] figcaption { color: var(--muted); }
+html[data-theme='dark'] .msg.user .bubble .muted { color: #4a3d00 !important; }
+
+/* 深色下计数徽标：蓝底白字（压过前面 ink 底那条） */
+html[data-theme='dark'] .count { background: var(--info) !important; color: #fff !important; }
+
+/* ===== 加一点颜色层次：入口卡左侧色条 + 账本三格顶部色条 ===== */
+.tiles .tile { border-left-width: 6px; border-left-style: solid; }
+.tiles .tile:nth-child(4n + 1) { border-left-color: var(--yellow); }
+.tiles .tile:nth-child(4n + 2) { border-left-color: var(--info); }
+.tiles .tile:nth-child(4n + 3) { border-left-color: var(--ok); }
+.tiles .tile:nth-child(4n + 4) { border-left-color: var(--amber); }
+html[data-theme='dark'] .tiles .tile:nth-child(4n + 1) { border-left-color: var(--yellow); }
+
+.stats .stat { border-top: 4px solid var(--rule); }
+.stats .stat:nth-child(1) { border-top-color: var(--ok); }
+.stats .stat:nth-child(2) { border-top-color: var(--bad); }
+.stats .stat:nth-child(3) { border-top-color: var(--info); }
+
+/* 小标题用信息蓝，长文本里能分段 */
+.msg.ai .bubble > h3 { color: var(--info); }
+/* 仓库分组标题同样 */
+.wh-group-t, .wh-tab { color: var(--ink); }
+
+/* 徽标用饱和蓝（深色下 --info 是浅蓝，白字会糊） */
+:root { --info-solid: #2440c9; }
+html[data-theme='dark'] { --info-solid: #3550e0; }
+.count, .tick, .wh-item.picked .pick { background: var(--info-solid) !important; color: #fff !important; }
+html[data-theme='dark'] .count { background: var(--info-solid) !important; color: #fff !important; }
+
+/* 方法名上色：GET 绿 / POST 蓝 / PATCH 橙 / DELETE 红 */
+.ep .m { font-weight: 700; }
+.ep .m.GET { color: var(--ok); }
+.ep .m.POST { color: var(--info); }
+.ep .m.PATCH { color: var(--amber); }
+.ep .m.DELETE { color: var(--bad); }
+
+/* 账本空态整行铺开（.ledger li 的 3 列会压窄它） */
+.ledger li.hint-row { grid-template-columns: 1fr; color: var(--muted); }
+
+/* 接入状态小标：方形、跟着主题走（原来是旧奶油主题的圆角浅色块） */
+.chip-state { border-radius: 0; padding: 0 7px; font-size: 12px; line-height: 18px; border-width: 1px; border-style: solid; }
+.chip-state.on { color: #0b0b0b; background: var(--ok); border-color: #0b0b0b; }
+.chip-state.off { color: var(--ink); background: var(--rule); border-color: var(--edge); }
+html[data-theme='dark'] .chip-state.off { color: var(--ink-2); }
+
+/* 已接状态用饱和绿 + 白字（--ok 在深色下是浅绿，配深字会糊） */
+:root { --ok-solid: #0f7a52; }
+html[data-theme='dark'] { --ok-solid: #178a58; }
+.chip-state.on { color: #fff !important; background: var(--ok-solid) !important; border-color: #0b0b0b; }
