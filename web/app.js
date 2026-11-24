@@ -1,4 +1,4 @@
-﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
+// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -126,7 +126,17 @@ function renderProductList() {
 }
 
 function pdOpen(open) {
-  $('#pd').classList.toggle('hidden', !open);
+  const panel = $('#pd');
+  if (open) {
+    // 径向展开：从顶栏按钮的圆心长出，而不是平移滑动
+    const btn = $('#btnProducts').getBoundingClientRect();
+    const ox = btn.left + btn.width / 2;
+    const oy = btn.top + btn.height / 2;
+    panel.style.setProperty('--ox', `${ox}px`);
+    panel.style.setProperty('--oy', `${oy}px`);
+    panel.classList.remove('closing');
+  }
+  panel.classList.toggle('hidden', !open);
   $('#pdMask').classList.toggle('hidden', !open);
   $('#btnProducts').setAttribute('aria-expanded', String(open));
   if (open) {
@@ -205,6 +215,56 @@ function whAssets() {
 
 const CONTENT_LABEL = { faq: 'FAQ 与答案卡', anchor: '事实锚点', keyword_layer: '六层关键词', inquiry: '原始询盘', reply: '回信草稿' };
 
+const whSel = { on: false, picked: new Set() };
+let dragId = null;
+
+function renderWhBar() {
+  const n = whSel.picked.size;
+  const bar = $('#whBar');
+  if (!bar) return;
+  $('#whBarText').textContent = n ? `已选 ${n} 张` : '点图选中，可批量删除';
+  $('#whDel').disabled = !n;
+}
+
+function whSetSel(on) {
+  whSel.on = on;
+  whSel.picked.clear();
+  const btn = $('#whSel');
+  btn.textContent = on ? '完成' : '选择';
+  btn.setAttribute('aria-pressed', String(on));
+  $('#whBar').classList.toggle('hidden', !on);
+  renderWhBar();
+  renderWarehouse();
+}
+
+function togglePick(id, fig) {
+  if (whSel.picked.has(id)) whSel.picked.delete(id);
+  else whSel.picked.add(id);
+  const picked = whSel.picked.has(id);
+  fig.classList.toggle('picked', picked);
+  if (picked) {
+    fig.classList.remove('tick');
+    void fig.offsetWidth;
+    fig.classList.add('tick');
+  }
+  renderWhBar();
+}
+
+async function whDeletePicked() {
+  const ids = [...whSel.picked];
+  if (!ids.length || !state.current) return;
+  ids.forEach((id) => document.querySelector(`.wh-item[data-asset="${id}"]`)?.classList.add('removing'));
+  await new Promise((r) => setTimeout(r, 420));
+  for (const id of ids) {
+    await api(`/api/assets/${id}`, { method: 'DELETE' }).catch(() => {});
+  }
+  whSel.picked.clear();
+  state.current = await api(`/api/products/${state.current.id}`);
+  refreshMeta();
+  renderWhBar();
+  renderWarehouse();
+}
+
 function renderWarehouse() {
   const { base, images, copies, content, inquiry } = whAssets();
   const texts = copies.length + content.length + inquiry.length;
@@ -223,23 +283,85 @@ function renderWarehouse() {
       body.innerHTML = '<p class="muted">还没有图。回「生图」发一句，出来的图会自动进这里。</p>';
       return;
     }
+    const order = state.current.detailOrder || [];
+    const imagesSorted = images.slice().sort((a, b) => {
+      const ia = order.indexOf(a.id);
+      const ib = order.indexOf(b.id);
+      if (ia < 0 && ib < 0) return 0;
+      if (ia < 0) return 1;
+      if (ib < 0) return -1;
+      return ia - ib;
+    });
+    let seq = 0;
     const card = (a) => {
       const isReal = a.kind === 'angle_real';
       const label =
         a.kind === 'refined' ? `精修 · ${a.meta?.crop || '1:1'}` : a.kind === 'angle' ? `视角 · ${a.meta?.angle || ''}` : a.meta?.template || a.kind;
-      return `<figure class="wh-item">
-        <img src="${a.url}" alt="" data-open="${a.url}">
+      const picked = whSel.picked.has(a.id);
+      const canDrag = a.kind === 'detail';
+      seq += 1;
+      return `<figure class="wh-item${picked ? ' picked' : ''}" data-asset="${a.id}" data-drag="${canDrag ? '1' : '0'}" draggable="${canDrag}" style="--i:${seq}">
+        <img src="${a.url}" alt=""${isReal ? '' : ''}>
+        ${whSel.on ? '<span class="pick" aria-hidden="true"></span>' : ''}
         <figcaption>${esc(label)} · ${a.width}×${a.height}
           ${isReal ? '<span class="chip-real">实拍</span>' : a.meta?.usedRefined ? '<span class="chip-ref">引精修</span>' : ''}
         </figcaption>
       </figure>`;
     };
+    body.classList.toggle('picking', whSel.on);
     body.innerHTML = [
       base.length ? `<h4 class="wh-group">基底素材 <span class="muted">备料产物，后续出图会引用</span></h4><div class="wh-grid">${base.map(card).join('')}</div>` : '',
-      images.length ? `<h4 class="wh-group">成品图</h4><div class="wh-grid">${images.slice().reverse().map(card).join('')}</div>` : '',
+      images.length
+        ? `<h4 class="wh-group">成品图 ${order.length ? '<span class="muted">详情段可拖拽改顺序</span>' : ''}</h4><div class="wh-grid">${imagesSorted.map(card).join('')}</div>`
+        : '',
     ].join('');
-    body.querySelectorAll('[data-open]').forEach((img) => {
-      img.onclick = () => window.open(img.dataset.open, '_blank');
+
+    body.querySelectorAll('.wh-item').forEach((fig) => {
+      const id = fig.dataset.asset;
+      fig.addEventListener('click', (ev) => {
+        if (whSel.on) {
+          ev.preventDefault();
+          togglePick(id, fig);
+          return;
+        }
+        const img = fig.querySelector('img');
+        if (img) window.open(img.src, '_blank');
+      });
+      if (fig.dataset.drag === '1' && !whSel.on) {
+        fig.addEventListener('dragstart', (ev) => {
+          dragId = id;
+          fig.classList.add('dragging');
+          ev.dataTransfer?.setData('text/plain', id);
+          if (ev.dataTransfer) ev.dataTransfer.effectAllowed = 'move';
+        });
+        fig.addEventListener('dragend', () => {
+          fig.classList.remove('dragging');
+          fig.classList.remove('drop-target');
+        });
+        fig.addEventListener('dragover', (ev) => {
+          if (!dragId || dragId === id) return;
+          ev.preventDefault();
+          fig.classList.add('drop-target');
+        });
+        fig.addEventListener('dragleave', () => fig.classList.remove('drop-target'));
+        fig.addEventListener('drop', async (ev) => {
+          ev.preventDefault();
+          fig.classList.remove('drop-target');
+          const from = dragId;
+          dragId = null;
+          if (!from || from === id) return;
+          const list = imagesSorted.filter((x) => x.kind === 'detail').map((x) => x.id);
+          const a = list.indexOf(from);
+          const b = list.indexOf(id);
+          if (a < 0 || b < 0) return;
+          list.splice(b, 0, list.splice(a, 1)[0]);
+          state.current.detailOrder = list;
+          const figEl = fig.closest('.wh-grid');
+          figEl?.classList.add('settling');
+          await api(`/api/products/${state.current.id}`, { method: 'PATCH', body: { detailOrder: list } });
+          renderWarehouse();
+        });
+      }
     });
   } else {
     if (!texts) {
@@ -307,7 +429,7 @@ function chatReset() {
   const inner = box.querySelector('.chat-inner');
   const p = state.current;
   const hist = loadHistory();
-  for (const m of hist) say(inner, m.who, m.html, { persist: false });
+  for (const m of hist) say(inner, m.who, m.html, { persist: false, replay: true });
   if (!hist.length) {
     say(
       inner,
@@ -405,6 +527,8 @@ function say(container, who, html, opts = {}) {
     el.innerHTML = '<div class="bubble"></div>';
     el.querySelector('.bubble').innerHTML = html;
   }
+  // 只有「刚生成」的 AI 消息做逐段揭示；回放历史一律不动
+  if (who === 'ai' && opts.reveal !== false && !opts.replay) el.classList.add('fresh');
   container.appendChild(el);
   if (opts.persist !== false) pushHistory(who, html);
   const scroller = el.closest('.chat');
@@ -433,10 +557,34 @@ function shots(bubble, assets) {
 function progressBubble(text) {
   const inner = $('#chat .chat-inner');
   const el = say(inner, 'ai', `<p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
+  const bar = el.querySelector('.bar i');
+  const label = el.querySelector('.progress span');
+  // 弹簧步进：显示值追目标值，带一点过冲后落定，别一格一格跳
+  let target = 0;
+  let cur = 0;
+  let vel = 0;
+  let raf = null;
+  let tag = '';
+  const frame = () => {
+    const k = 0.16;
+    const damp = 0.72;
+    vel = (vel + (target - cur) * k) * damp;
+    cur += vel;
+    if (Math.abs(target - cur) < 0.25 && Math.abs(vel) < 0.05) {
+      cur = target;
+      vel = 0;
+      raf = null;
+    } else {
+      raf = requestAnimationFrame(frame);
+    }
+    bar.style.width = `${cur}%`;
+    label.textContent = `${Math.round(cur)}%${tag ? ' · ' + tag : ''}`;
+  };
   return {
-    update(pct, label) {
-      el.querySelector('.bar i').style.width = `${pct}%`;
-      el.querySelector('.progress span').textContent = `${pct}%${label ? ' · ' + label : ''}`;
+    update(pct, note) {
+      target = Math.max(0, Math.min(100, Number(pct) || 0));
+      if (note) tag = note;
+      if (!raf) raf = requestAnimationFrame(frame);
     },
     done() { el.remove(); },
   };
@@ -524,7 +672,11 @@ function askParams({ title, thumb, ask, known = {} }) {
     <div class="ask-sub">${esc(title || '新商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
     ${need.count ? `
     <div class="opt">
-      <div class="opt-label">要几张</div>
+      <div class="opt-label">要几张<span class="opt-hint"><b id="cntVal">${st.count}</b> 张 · 拖动会按速度吸附</span></div>
+      <div class="snap-wrap">
+        <input id="cntRange" class="snap" type="range" min="1" max="6" step="1" value="${st.count}" aria-label="要几张">
+        <div class="snap-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+      </div>
       <div class="opt-row" data-k="count">
         <button type="button" class="chip${st.count === 1 ? ' on' : ''}" data-v="1">1 张</button>
         <button type="button" class="chip${st.count === 2 ? ' on' : ''}" data-v="2">2 张<span class="tag">常用</span></button>
@@ -601,6 +753,43 @@ function askParams({ title, thumb, ask, known = {} }) {
     });
     if (cntEl) cntEl.oninput = () => { if (cntEl.value) st.count = Number(cntEl.value); sync(); };
     if (wEl) wEl.oninput = hEl.oninput = () => { if (wEl.value || hEl.value) st.size = 'custom'; sync(); };
+
+    /* 张数滑块：松手时按拖动速度再走一格，然后吸附到整数 */
+    const range = el.querySelector('#cntRange');
+    const cntVal = el.querySelector('#cntVal');
+    if (range) {
+      let samples = [];
+      const setCount = (v, fromRange) => {
+        st.count = Math.min(6, Math.max(1, Math.round(v)));
+        if (cntEl) cntEl.value = '';
+        if (cntVal) cntVal.textContent = st.count;
+        if (fromRange) range.value = String(st.count);
+        sync();
+      };
+      range.oninput = () => {
+        const now = performance.now();
+        samples.push({ t: now, v: Number(range.value) });
+        samples = samples.filter((s) => now - s.t < 120);
+        if (cntVal) cntVal.textContent = range.value;
+        st.count = Number(range.value);
+        sync();
+      };
+      const release = () => {
+        if (samples.length < 2) return setCount(Number(range.value), true);
+        const first = samples[0];
+        const last = samples[samples.length - 1];
+        const dt = Math.max(16, last.t - first.t);
+        const velocity = (last.v - first.v) / dt; // 格/毫秒
+        const projected = last.v + velocity * 90; // 惯性再往前推一点
+        setCount(projected, true);
+        samples = [];
+      };
+      range.onchange = release;
+      if (window.PointerEvent) range.addEventListener('pointerup', release);
+      range.addEventListener('keydown', (ev) => {
+        if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') setTimeout(() => setCount(Number(range.value), true), 0);
+      });
+    }
   });
 }
 
@@ -1262,10 +1451,25 @@ $('#pdList').addEventListener('click', async (ev) => {
 $('#btnWarehouse').onclick = () => whOpen($('#wh').classList.contains('hidden'));
 $('#whClose').onclick = () => whOpen(false);
 $('#whMask').onclick = () => whOpen(false);
+$('#whSel').onclick = () => whSetSel(!whSel.on);
+$('#whDel').onclick = () => whDeletePicked();
+$('#whSelAll').onclick = () => {
+  const { base, images } = whAssets();
+  [...base, ...images].forEach((a) => whSel.picked.add(a.id));
+  renderWhBar();
+  renderWarehouse();
+};
+$('#whSelNone').onclick = () => {
+  whSel.picked.clear();
+  renderWhBar();
+  renderWarehouse();
+};
 $('.wh-tabs').addEventListener('click', (ev) => {
   const btn = ev.target.closest('.wh-tab');
   if (!btn) return;
   state.whTab = btn.dataset.wh;
+  whSel.picked.clear();
+  renderWhBar();
   renderWarehouse();
 });
 document.addEventListener('keydown', (ev) => {
@@ -1274,6 +1478,27 @@ document.addEventListener('keydown', (ev) => {
     pdOpen(false);
     $('#pfMenu').classList.add('hidden');
   }
+});
+
+/* 点击处的波纹：只给开关类控件，正文和图片不掺和 */
+function rippleAt(host, ev) {
+  if (!host) return;
+  const box = host.getBoundingClientRect();
+  const size = Math.max(box.width, box.height) * 1.15;
+  const span = document.createElement('span');
+  span.className = 'ripple';
+  span.style.width = `${size}px`;
+  span.style.height = `${size}px`;
+  const cx = Number.isFinite(ev.clientX) && ev.clientX > 0 ? ev.clientX : box.left + box.width / 2;
+  const cy = Number.isFinite(ev.clientY) && ev.clientY > 0 ? ev.clientY : box.top + box.height / 2;
+  span.style.left = `${cx - box.left - size / 2}px`;
+  span.style.top = `${cy - box.top - size / 2}px`;
+  host.appendChild(span);
+  setTimeout(() => span.remove(), 560);
+}
+document.addEventListener('pointerdown', (ev) => {
+  const host = ev.target.closest('.tab, .chip, .pf-item, .tile, .btn.primary, .btn-danger, .pd-item, .market-sel');
+  if (host) rippleAt(host, ev);
 });
 
 function esc(s) {

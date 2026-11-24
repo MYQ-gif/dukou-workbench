@@ -1,4 +1,4 @@
-// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
+﻿// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
 // 规矩：零依赖，只 import Node 内置模块 + 本地 lib。
 // 契约见 CONTRACT.md，任何字段改动先改契约再改代码。
 import http from 'node:http';
@@ -245,7 +245,7 @@ const server = http.createServer(async (req, res) => {
 
       if (m === 'PATCH') {
         const body = await readJSON(req);
-        const allowed = ['title', 'category', 'platform', 'market', 'targetLangs', 'sellingPoints', 'rawText', 'status', 'brief'];
+        const allowed = ['title', 'category', 'platform', 'market', 'targetLangs', 'sellingPoints', 'rawText', 'status', 'brief', 'detailOrder'];
         for (const key of allowed) {
           if (key in body) product[key] = body[key];
         }
@@ -296,6 +296,29 @@ const server = http.createServer(async (req, res) => {
       }
       persist();
       return send(res, 201, { assetId: asset.id, url: asset.url, width, height });
+    }
+
+    /* ---- 6b. DELETE /api/assets/:id ---- */
+    const assetMatch = p.match(/^\/api\/assets\/([A-Za-z0-9_]+)$/);
+    if (assetMatch) {
+      if (m !== 'DELETE') return fail(res, 405, 'METHOD_NOT_ALLOWED', 'use DELETE');
+      const assetId = assetMatch[1];
+      const idx = db.assets.findIndex((a) => a.id === assetId);
+      if (idx < 0) return fail(res, 404, 'NOT_FOUND', 'asset not found');
+      const asset = db.assets[idx];
+      db.assets.splice(idx, 1);
+      for (const product of db.products) {
+        if (!Array.isArray(product.assets)) continue;
+        const before = product.assets.length;
+        product.assets = product.assets.filter((x) => x !== assetId);
+        if (product.assets.length !== before) product.updatedAt = nowISO();
+      }
+      if (asset.url && asset.url.startsWith('/files/')) {
+        const file = path.join(UPLOAD_DIR, path.basename(asset.url));
+        fs.promises.unlink(file).catch(() => {});
+      }
+      persist();
+      return send(res, 200, { deleted: assetId });
     }
 
     /* ---- 7. POST /api/jobs ---- */

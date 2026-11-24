@@ -247,3 +247,5 @@
 | 2026-11-24 | v1.4 | 新增 type=detail：一次出六段详情页图 + 每段文案（数字取事实锚点） | 主人 |
 | 2026-11-24 | v1.3 | 新增 type=geo（买家问题库/事实锚点/六层关键词）与 type=inquiry（询盘解析+风险+多语回信），新增 5 个 Asset kind | 主人 |
 | 2026-11-22 | v1.2 | 新增 type=clip（Seedance 商品短视频，异步 1–3 分钟）与 kind=clip 资产；/api/jobs 白名单同步 | 主人 |
+
+| 2026-11-24 | v1.5 | 新增 `DELETE /api/assets/:id`（删资产，仓库多选删除用）与 `PATCH /api/products/:id` 的 `detailOrder`（详情段顺序，拖拽排序持久化） | 主人 |

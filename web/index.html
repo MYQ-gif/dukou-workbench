@@ -177,7 +177,14 @@
       <button data-wh="image" class="wh-tab active" type="button">图片 <span id="whImgNum">0</span></button>
       <button data-wh="copy" class="wh-tab" type="button">文案 <span id="whCopyNum">0</span></button>
     </div>
+    <button id="whSel" class="link" type="button" aria-pressed="false">选择</button>
     <button id="whClose" class="link" type="button" aria-label="关闭仓库">关闭</button>
+  </div>
+  <div id="whBar" class="wh-bar hidden">
+    <span id="whBarText">已选 0 张</span>
+    <button id="whDel" class="btn-danger" type="button" disabled>删除</button>
+    <button id="whSelAll" class="link" type="button">全选</button>
+    <button id="whSelNone" class="link" type="button">取消</button>
   </div>
   <div id="whBody" class="wh-body"></div>
 </aside>

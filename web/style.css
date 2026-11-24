@@ -578,7 +578,15 @@ h1 { letter-spacing: -0.02em; }
 .pd-mask { position: fixed; inset: 0; background: rgba(10, 46, 92, 0.18); z-index: 40; }
 .pd { position: fixed; top: 0; left: 0; bottom: 0; width: 360px; max-width: 88vw; background: var(--sheet);
   border-right: 1px solid var(--edge); box-shadow: 10px 0 28px rgba(10, 46, 92, 0.08); z-index: 41;
-  display: flex; flex-direction: column; padding: 14px 14px 10px; }
+  display: flex; flex-direction: column; padding: 14px 14px 10px;
+  /* 径向展开：以顶栏按钮圆心为原点长出 */
+  clip-path: circle(150% at var(--ox, 32px) var(--oy, 32px));
+  animation: pdGrow 300ms var(--ease-out) both; }
+@keyframes pdGrow {
+  from { clip-path: circle(0% at var(--ox, 32px) var(--oy, 32px)); }
+  to { clip-path: circle(150% at var(--ox, 32px) var(--oy, 32px)); }
+}
+@media (prefers-reduced-motion: reduce) { .pd { animation: none; } }
 .pd-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
 .pd-head h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
 .pd-search { height: 34px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 8px; background: #fff;
@@ -598,4 +606,71 @@ h1 { letter-spacing: -0.02em; }
 @media (max-width: 720px) {
   .btn-products { max-width: 42vw; }
   .pd { width: 100vw; max-width: 100vw; }
+}
+
+/* ============ 动效层：八处交互 ============ */
+
+/* ① 文字揭示：刚生成的 AI 消息逐段擦出，回放历史不动 */
+@keyframes lineIn { from { clip-path: inset(0 100% 0 0); opacity: 0.65; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+.msg.ai.fresh .bubble > * { animation: lineIn 420ms var(--ease-out) both; }
+.msg.ai.fresh .bubble > *:nth-child(2) { animation-delay: 55ms; }
+.msg.ai.fresh .bubble > *:nth-child(3) { animation-delay: 105ms; }
+.msg.ai.fresh .bubble > *:nth-child(4) { animation-delay: 150ms; }
+.msg.ai.fresh .bubble > *:nth-child(5) { animation-delay: 190ms; }
+.msg.ai.fresh .bubble > *:nth-child(n + 6) { animation-delay: 225ms; }
+
+/* ④ 错峰多选：卡片入场与勾选 */
+@keyframes cardIn { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
+.wh-item { animation: cardIn 220ms var(--ease-out) both; animation-delay: calc(min(var(--i, 1), 12) * 26ms); position: relative; }
+.wh-body.picking .wh-item { cursor: pointer; }
+.pick { position: absolute; top: 8px; right: 8px; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.9); background: rgba(10, 46, 92, 0.35); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.wh-item.picked .pick { background: var(--link); border-color: var(--link); }
+.wh-item.picked .pick::after { content: ''; position: absolute; left: 5px; top: 2.5px; width: 4px; height: 8px;
+  border: 2px solid #fff; border-top: 0; border-left: 0; transform: rotate(45deg) scale(0); animation: tickIn 260ms var(--ease-out) both; }
+@keyframes tickIn { 0% { transform: rotate(45deg) scale(0); } 60% { transform: rotate(45deg) scale(1.25); } 100% { transform: rotate(45deg) scale(1); } }
+.wh-item.picked img { outline: 2px solid var(--link); outline-offset: 1px; }
+.wh-item.tick { animation: pickNudge 260ms var(--ease-out); }
+@keyframes pickNudge { 0% { transform: scale(1); } 45% { transform: scale(0.975); } 100% { transform: scale(1); } }
+
+/* ⑧ 弧形删除：卡片沿弧线折走，再真正删 */
+@keyframes curveOut {
+  0% { transform: none; clip-path: inset(0 0 0 0 round 8px); opacity: 1; }
+  35% { transform: translate(6px, -8px) rotate(1.6deg); }
+  100% { transform: translate(-18px, 26px) rotate(-7deg) scale(0.9); clip-path: inset(46% 0 46% 0 round 12px); opacity: 0; }
+}
+.wh-item.removing { animation: curveOut 400ms var(--ease-in-out) forwards; pointer-events: none; }
+
+/* ③ 拖拽排序 */
+.wh-item[draggable='true'] img { cursor: grab; }
+.wh-item.dragging { opacity: 0.35; transform: scale(0.98); }
+.wh-item.drop-target img { outline: 2px dashed var(--link); outline-offset: 2px; }
+.wh-grid.settling { animation: settle 200ms var(--ease-out); }
+@keyframes settle { from { opacity: 0.7; } to { opacity: 1; } }
+
+/* 多选工具条 */
+.wh-bar { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--rule);
+  font-size: 12px; color: var(--muted); background: #fbfaf6; }
+.wh-bar #whBarText { margin-right: auto; font-variant-numeric: tabular-nums; }
+.btn-danger { height: 28px; padding: 0 12px; border: 1px solid #d9b6ae; border-radius: var(--radius);
+  background: #fdf3f1; color: #a4472f; font: 12px/1 var(--sans); cursor: pointer; position: relative; overflow: hidden; }
+.btn-danger:disabled { opacity: 0.45; cursor: default; }
+
+/* ⑦ 波纹：只给开关类控件 */
+.ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.16; transform: scale(0);
+  pointer-events: none; animation: rippleOut 520ms var(--ease-out) forwards; }
+@keyframes rippleOut { to { transform: scale(1); opacity: 0; } }
+.tab, .chip, .pf-item, .tile, .pd-item, .btn.primary, .btn-danger, .market-sel { position: relative; overflow: hidden; }
+
+/* ⑤ 速度吸附滑块 */
+.snap-wrap { margin: 4px 0 10px; }
+.snap { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; }
+.snap::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: #dcd8cf; }
+.snap::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7px; border-radius: 50%;
+  background: var(--sheet); border: 2px solid var(--link); box-shadow: 0 1px 3px rgba(10, 46, 92, 0.18); transition: transform 120ms var(--ease-out); }
+.snap:active::-webkit-slider-thumb { transform: scale(1.12); }
+.snap-ticks { display: flex; justify-content: space-between; padding: 0 2px; font: 10px/1 var(--mono); color: var(--muted); }
+@media (prefers-reduced-motion: reduce) {
+  .msg.ai.fresh .bubble > *, .wh-item, .wh-item.removing, .wh-grid.settling { animation: none !important; }
+  .ripple { display: none; }
 }
