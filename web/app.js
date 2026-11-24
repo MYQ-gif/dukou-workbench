@@ -125,14 +125,19 @@ function whAssets() {
     base: assets.filter((a) => a.kind === 'refined' || a.kind === 'angle' || a.kind === 'angle_real'),
     images: assets.filter((a) => ['main', 'marketing', 'detail', 'sub'].includes(a.kind)),
     copies: assets.filter((a) => a.kind === 'copy'),
+    content: assets.filter((a) => ['faq', 'anchor', 'keyword_layer'].includes(a.kind)),
+    inquiry: assets.filter((a) => ['inquiry', 'reply'].includes(a.kind)),
   };
 }
 
+const CONTENT_LABEL = { faq: 'FAQ 与答案卡', anchor: '事实锚点', keyword_layer: '六层关键词', inquiry: '原始询盘', reply: '回信草稿' };
+
 function renderWarehouse() {
-  const { base, images, copies } = whAssets();
-  $('#whCount').textContent = base.length + images.length + copies.length;
+  const { base, images, copies, content, inquiry } = whAssets();
+  const texts = copies.length + content.length + inquiry.length;
+  $('#whCount').textContent = base.length + images.length + texts;
   $('#whImgNum').textContent = base.length + images.length;
-  $('#whCopyNum').textContent = copies.length;
+  $('#whCopyNum').textContent = texts;
   $$('.wh-tab').forEach((t) => t.classList.toggle('active', t.dataset.wh === state.whTab));
 
   const body = $('#whBody');
@@ -164,29 +169,45 @@ function renderWarehouse() {
       img.onclick = () => window.open(img.dataset.open, '_blank');
     });
   } else {
-    if (!copies.length) {
-      body.innerHTML = '<p class="muted">还没有文案。输入框下面点「只要文案」，生成后进这里。</p>';
+    if (!texts) {
+      body.innerHTML = '<p class="muted">还没有文字产物。点「只要文案」写 listing，或说一句「这批买家会问什么」做内容资产，贴一段询盘也行。</p>';
       return;
     }
-    body.innerHTML = copies
-      .slice()
-      .reverse()
-      .map(
-        (a) => `<article class="wh-copy">
-          <div class="wh-copy-head">
-            <span class="tag">${esc(a.meta?.lang || 'EN')} · ${esc(pf(a.meta?.platform).name)}</span>
-            <button class="link" data-copy="${a.id}">复制全文</button>
-          </div>
-          <h4>${esc(a.meta?.title || '(无标题)')}</h4>
-          <ul>${(a.meta?.bullets || []).map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
-          <p>${esc(a.meta?.detail || '')}</p>
-        </article>`
-      )
-      .join('');
+    const textCard = (a) => `<article class="wh-copy">
+      <div class="wh-copy-head">
+        <span class="tag">${esc(CONTENT_LABEL[a.kind] || a.kind)}</span>
+        <button class="link" data-copy="${a.id}">复制全文</button>
+      </div>
+      <pre class="wh-text">${esc(a.meta?.text || '')}</pre>
+    </article>`;
+    body.innerHTML = [
+      content.length ? `<h4 class="wh-group">内容资产 <span class="muted">买家问题 / 锚点 / 词表</span></h4>${content.slice().reverse().map(textCard).join('')}` : '',
+      inquiry.length ? `<h4 class="wh-group">询盘与回信</h4>${inquiry.slice().reverse().map(textCard).join('')}` : '',
+      copies.length
+        ? `<h4 class="wh-group">listing 文案</h4>` +
+          copies
+            .slice()
+            .reverse()
+            .map(
+              (a) => `<article class="wh-copy">
+                <div class="wh-copy-head">
+                  <span class="tag">${esc(a.meta?.lang || 'EN')} · ${esc(pf(a.meta?.platform).name)}</span>
+                  <button class="link" data-copy="${a.id}">复制全文</button>
+                </div>
+                <h4>${esc(a.meta?.title || '(无标题)')}</h4>
+                <ul>${(a.meta?.bullets || []).map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+                <p>${esc(a.meta?.detail || '')}</p>
+              </article>`
+            )
+            .join('')
+        : '',
+    ].join('');
     body.querySelectorAll('[data-copy]').forEach((btn) => {
       btn.onclick = async () => {
-        const a = copies.find((x) => x.id === btn.dataset.copy);
-        const text = [a.meta?.title, ...(a.meta?.bullets || []), a.meta?.detail].filter(Boolean).join('\n');
+        const all = [...copies, ...content, ...inquiry];
+        const a = all.find((x) => x.id === btn.dataset.copy);
+        const text =
+          a.meta?.text || [a.meta?.title, ...(a.meta?.bullets || []), a.meta?.detail].filter(Boolean).join('\n');
         try {
           await navigator.clipboard.writeText(text);
           btn.textContent = '已复制';
@@ -237,6 +258,14 @@ function chatReset() {
          <button class="tile" type="button" data-fill="把这段口播视频翻成泰语字幕">
            <span class="tile-t">翻视频字幕</span>
            <span class="tile-d">保留原声，出目标语言字幕轨</span>
+         </button>
+         <button class="tile" type="button" data-fill="这批买家会问什么？顺便把形容词换成数字">
+           <span class="tile-t">买家会问什么</span>
+           <span class="tile-d">问题库 + 事实锚点 + 六层关键词</span>
+         </button>
+         <button class="tile" type="button" data-fill="Hi, we are a furniture retailer in Ho Chi Minh City. We need 200 pcs, 1.2m, natural finish. What is your FOB price and lead time? Do you have fumigation certificate? We prefer T/T 30% deposit.">
+           <span class="tile-t">询盘回信</span>
+           <span class="tile-d">贴一段买家来信，抽要素、标风险、出回信</span>
          </button>
          <button class="tile" type="button" data-tab="ledger">
            <span class="tile-t">记一笔账</span>
@@ -512,6 +541,13 @@ const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
 // 提到短片/运镜就是出视频；但同时说「主图/详情」时仍按出图走
 const CLIP_WORDS = /视频|短片|短视频|运镜|动起来|片头/;
 const IMAGE_ONLY = /主图|详情图|白底图|海报|套图/;
+const GEO_WORDS = /会问什么|买家问题|买家会问|关键词|锚点|内容资产|GEO|AI 可见度|ai 可见度/i;
+const INQUIRY_WORDS = /询盘|回信|报价|买家来信|客户问|inquiry/i;
+// 一整段带价格/数量/交期口吻的外文，直接当询盘
+const looksLikeInquiry = (t) =>
+  t.length > 120 &&
+  !/^[\u4e00-\u9fa5]/.test(t) &&
+  /(price|quote|quotation|pcs|moq|lead time|fob|cif|deposit|sample)/i.test(t);
 
 /* ---------------- 补素材：先问再动手 ---------------- */
 
@@ -749,7 +785,104 @@ async function doCopy() {
 }
 
 const tplLabel = (t) => ({ main: '主图', marketing: '营销图', detail: '详情页' }[t] || t);
-const langLabel = (l) => ({ en: '英语', th: '泰语', vi: '越南语' }[l] || l);
+const langLabel = (l) => ({ en: '英语', th: '泰语', vi: '越南语', zh: '中文', ar: '阿拉伯语' }[l] || l);
+
+/* ---------------- GEO 内容资产 ---------------- */
+
+// 没选中商品时：只有一个就自动用它，一个都没有就新建，多个就让用户先挑
+async function ensureTarget(askText) {
+  if (state.current) return true;
+  try {
+    const list = await api('/api/products');
+    const items = list.items || [];
+    if (items.length === 1) {
+      await selectProduct(items[0].id);
+      return !!state.current;
+    }
+    if (!items.length) {
+      await ensureProduct(askText, state.lastUploadName);
+      return !!state.current;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+async function doGeo(askText) {
+  const inner0 = $('#chat .chat-inner');
+  if (!(await ensureTarget(askText))) {
+    say(inner0, 'ai', '<p>先选一个商品：顶栏下拉里挑一个，再说这句。</p>');
+    return;
+  }
+  const inner = $('#chat .chat-inner');
+  say(inner, 'user', `<p>${esc(askText || '这批买家会问什么')}</p><p class="meta-line">内容资产 · ${esc(pf(state.platform).name)}</p>`);
+  const box = progressBubble('正在拆买家问题、找事实锚点…');
+  try {
+    const { jobId } = await api('/api/jobs', {
+      method: 'POST',
+      body: {
+        type: 'geo',
+        productId: state.current.id,
+        params: { platform: state.platform, lang: $('#imgLang').value, brief: state.current.brief || {} },
+      },
+    });
+    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    box.done();
+    const qRows = (r.questions || []).slice(0, 10).map((q) => `<li><b>${esc(q.catName)}</b> · ${esc(q.q)}<span class="muted-sm">（${esc(q.where)}）</span></li>`).join('');
+    const aRows = (r.anchors || []).map((a) => `<li>${esc(a.before)} → <b>${esc(a.after)}</b><span class="muted-sm">（${esc(a.why)}）</span></li>`).join('');
+    const kRows = (r.keywords || []).map((k) => `<li>${esc(k.layer)} · ${esc(k.term)}<span class="muted-sm"> → ${esc(k.where)}</span></li>`).join('');
+    say(inner, 'ai', `
+      <h3>买家会问什么</h3><ul>${qRows}</ul>
+      <h3>事实锚点（把形容词换成数字）</h3><ul>${aRows}</ul>
+      <h3>六层关键词</h3><ul>${kRows}</ul>
+      <p class="muted-sm">${esc(r.note || '')} · 三张卡已存进仓库「内容资产」</p>`);
+    state.current = await api(`/api/products/${state.current.id}`);
+    refreshMeta();
+    renderWarehouse();
+  } catch (e) {
+    box.done();
+    say(inner, 'ai', `<p style="color:#f27e4c">做内容资产失败：${esc(e.message)}</p>`);
+  }
+}
+
+/* ---------------- 询盘解析 ---------------- */
+
+async function doInquiry(rawText) {
+  const text = String(rawText || '').trim();
+  const inner0 = $('#chat .chat-inner');
+  if (!(await ensureTarget(''))) {
+    say(inner0, 'ai', '<p>先选一个商品：顶栏下拉里挑一个，再把询盘贴进来。</p>');
+    return;
+  }
+  const inner = $('#chat .chat-inner');
+  say(inner, 'user', `<p>${esc(text.slice(0, 220))}${text.length > 220 ? '…' : ''}</p><p class="meta-line">询盘解析</p>`);
+  const box = progressBubble('正在抽要素、标风险…');
+  try {
+    const { jobId } = await api('/api/jobs', {
+      method: 'POST',
+      body: { type: 'inquiry', productId: state.current.id, params: { text, langs: ['en', 'zh'] } },
+    });
+    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    box.done();
+    const fields = (r.fields || []).map((f) => `<li>${esc(f.label)}：<b>${esc(f.value)}</b></li>`).join('');
+    const risks = (r.risks || []).map((x) => `<li><span class="tag">${x.level === 'warn' ? '注意' : '提示'}</span> ${esc(x.text)}</li>`).join('');
+    const tiers = (r.tiers || []).map((t) => `<li>${t.qty} 件 · ${esc(t.unit)}</li>`).join('');
+    const replies = Object.entries(r.reply || {}).filter(([, v]) => v).map(([lang, v]) => `<details class="reply"><summary>${esc(langLabel(lang) || lang)} 回信</summary><pre class="wh-text">${esc(v)}</pre></details>`).join('');
+    say(inner, 'ai', `
+      <h3>要素</h3><ul>${fields}</ul>
+      ${tiers ? `<h3>阶梯价骨架</h3><ul>${tiers}</ul>` : ''}
+      <h3>风险</h3><ul>${risks}</ul>
+      <h3>回信</h3>${replies}
+      <p class="muted-sm">${esc(r.note || '')}</p>`);
+    state.current = await api(`/api/products/${state.current.id}`);
+    refreshMeta();
+    renderWarehouse();
+  } catch (e) {
+    box.done();
+    say(inner, 'ai', `<p style="color:#f27e4c">解析失败：${esc(e.message)}</p>`);
+  }
+}
 
 /* ---------------- 记账 ---------------- */
 
@@ -881,6 +1014,16 @@ $('#chat').addEventListener('click', (ev) => {
 $('#btnSend').onclick = async () => {
   const ask = $('#ask').value.trim();
   $('#ask').value = '';
+  // 贴进来一整段买家来信 → 询盘解析
+  if (looksLikeInquiry(ask) || (INQUIRY_WORDS.test(ask) && ask.length > 60)) {
+    doInquiry(ask);
+    return;
+  }
+  // 「这批买家会问什么」「做关键词」→ GEO 内容资产
+  if (GEO_WORDS.test(ask)) {
+    doGeo(ask);
+    return;
+  }
   // 先认「视频」：一句话里提到短片/运镜，就走 Seedance 出片
   if (CLIP_WORDS.test(ask) && !IMAGE_ONLY.test(ask)) {
     doClip(ask);

@@ -558,3 +558,11 @@ h1 { letter-spacing: -0.02em; }
 .wh-item figcaption .chip-real, .wh-item figcaption .chip-ref { margin-left: 6px; padding: 1px 5px; border-radius: 3px; font-size: 10px; }
 .wh-item figcaption .chip-real { background: #e7f2ec; color: #1f7a4d; }
 .wh-item figcaption .chip-ref { background: #eaf1f7; color: var(--link); }
+
+/* 内容资产 / 询盘回信 */
+.wh-text { margin: 6px 0 0; padding: 10px 12px; background: #f7f6f2; border: 1px solid var(--rule); border-radius: 8px;
+  font: 12.5px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #333a44; white-space: pre-wrap; word-break: break-word; }
+.reply { margin: 8px 0 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.reply summary { cursor: pointer; padding: 8px 12px; font-size: 13px; color: var(--ink); background: #fbfaf7; }
+.reply summary:hover { background: #f4f2ec; }
+.reply .wh-text { border: 0; border-radius: 0; background: #fff; }

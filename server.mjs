@@ -299,8 +299,8 @@ const server = http.createServer(async (req, res) => {
     if (m === 'POST' && p === '/api/jobs') {
       const body = await readJSON(req);
       const type = body.type;
-      if (!['image', 'video', 'copy', 'clip', 'visual'].includes(type)) {
-        return fail(res, 400, 'BAD_REQUEST', 'type must be image|video|copy|clip|visual');
+      if (!['image', 'video', 'copy', 'clip', 'visual', 'geo', 'inquiry'].includes(type)) {
+        return fail(res, 400, 'BAD_REQUEST', 'type must be image|video|copy|clip|visual|geo|inquiry');
       }
       if (!body.productId || !db.products.find((x) => x.id === body.productId)) {
         return fail(res, 400, 'BAD_REQUEST', 'productId is required and must exist');
