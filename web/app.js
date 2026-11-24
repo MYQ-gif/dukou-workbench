@@ -1,4 +1,4 @@
-// 前端逻辑 —— 原生 ES Module，无框架、无构建
+﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -603,7 +603,7 @@ function progressBubble(text, opts = {}) {
   const inner = $('#chat .chat-inner');
   // 长任务（Seedance 出片要等几分钟）先播一个跑动 loader，真进度一到就收起来
   const boot = opts.loader ? '<div class="duk-loader-wrap" aria-hidden="true"><span class="duk-loader"></span></div>' : '';
-  const el = say(inner, 'ai', `${boot}<p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
+  const el = say(inner, 'ai', `${boot}<div class="typing"><i></i><i></i><i></i></div><p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
   const bar = el.querySelector('.bar i');
   const label = el.querySelector('.progress span');
   const bootEl = el.querySelector('.duk-loader-wrap');

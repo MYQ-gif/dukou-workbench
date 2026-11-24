@@ -1,0 +1,1329 @@
+{
+ "url": "http://localhost:8787",
+ "at": "2026-11-24T15:37:04.219Z",
+ "allow": [
+  "button-fx",
+  "heavy-shadow"
+ ],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.95
+   ],
+   "motion": {
+    "elements": 9,
+    "css": 9,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 900,
+     "screens": 1,
+     "words": 85,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "chars": 7,
+     "lines": 1,
+     "size": 18,
+     "vw": 1.3,
+     "font": "Press Start 2P",
+     "weight": 600,
+     "tracking": 0.04,
+     "leading": 1.5,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "lines": 1,
+     "size": 18,
+     "font": "Press Start 2P"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "VT323",
+       "share": 0.94,
+       "mono": false
+      },
+      {
+       "family": "Press Start 2P",
+       "share": 0.04,
+       "mono": false
+      },
+      {
+       "family": "Segoe UI",
+       "share": 0.02,
+       "mono": false
+      }
+     ],
+     "familyCount": 3,
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ],
+     "sizeCount": 10,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 19,
+      "vw": 1.3,
+      "font": "VT323",
+      "text": "还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名"
+     },
+     "monoShare": 0.04,
+     "monoProseShare": 0.04,
+     "monoFamilies": [
+      "Press Start 2P",
+      "VT323"
+     ],
+     "monoSamples": [
+      "渡口",
+      "0",
+      "还没有选择商品",
+      "渡",
+      "发送"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.06,
+     "centerShare": 0.1,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f4efe2",
+     "bodyBgHsl": {
+      "h": 43,
+      "s": 0.45,
+      "l": 0.92
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#fffdf5",
+       "top": 48,
+       "hsl": {
+        "h": 48,
+        "s": 1,
+        "l": 0.98
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#0b0b0b",
+       "share": 0.45
+      },
+      {
+       "color": "#2b2b2b",
+       "share": 0.29
+      },
+      {
+       "color": "#6f6a5f",
+       "share": 0.25
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.01
+      },
+      {
+       "color": "#c9c4b8",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#fffdf5",
+      "hsl": {
+       "h": 48,
+       "s": 1,
+       "l": 0.98
+      },
+      "fg": "#0b0b0b"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 7,
+     "inHero": 7,
+     "radius": 0,
+     "height": 29,
+     "withShadow": 2,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "选择商品… ▾",
+      "仓库 0",
+      "生图",
+      "视频翻译",
+      "记账"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 4,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "button#btnProducts.btn-products → rgb(11, 11, 11) 2px 2px 0px 0px",
+      "button#btnWarehouse.btn-warehouse → rgb(11, 11, 11) 2px 2px 0px 0px",
+      "main.sheet → rgb(11, 11, 11) 4px 4px 0px 0px",
+      "div.bubble → rgb(11, 11, 11) 2px 2px 0px 0px"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 4,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 1,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 4,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 298
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "bg-image",
+      "ratio": 0.92
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 48,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 900,
+    "margins": {
+     "left": 34,
+     "right": 34
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "还没有选择商品",
+      "size": 18,
+      "top": 68,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 34,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 19,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0.34,
+    "voidBox": {
+     "x": 780,
+     "y": 120,
+     "w": 660,
+     "h": 660
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#f4efe2",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 34,
+     "right": 16
+    },
+    "hero": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "chars": 7,
+     "lines": 1,
+     "size": 18,
+     "vw": 1.3,
+     "font": "Press Start 2P",
+     "weight": 600,
+     "tracking": 0.04,
+     "leading": 1.5,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       0,
+       5
+      ]
+     ],
+     "heavyBorders": 5,
+     "borderSamples": [
+      "#0b0b0b on #fffdf5 (19.33:1)",
+      "#0b0b0b on #fffdf5 (19.33:1)",
+      "#0b0b0b on #fffdf5 (19.33:1)"
+     ],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgb(11, 11, 11) 2px 2px 0px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.3,
+     "tiny": 2,
+     "tinySamples": [
+      "翻译字幕 10px",
+      "记一笔 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ]
+    },
+    "title": {
+     "text": "还没有选择商品",
+     "size": 18,
+     "top": 68
+    },
+    "colourShare": 0.003
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.91
+   ],
+   "motion": {
+    "elements": 9,
+    "css": 9,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 1024,
+     "screens": 1,
+     "words": 85,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "chars": 7,
+     "lines": 1,
+     "size": 18,
+     "vw": 2.3,
+     "font": "Press Start 2P",
+     "weight": 600,
+     "tracking": 0.04,
+     "leading": 1.5,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "lines": 1,
+     "size": 18,
+     "font": "Press Start 2P"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "VT323",
+       "share": 0.94,
+       "mono": false
+      },
+      {
+       "family": "Press Start 2P",
+       "share": 0.04,
+       "mono": false
+      },
+      {
+       "family": "Segoe UI",
+       "share": 0.02,
+       "mono": false
+      }
+     ],
+     "familyCount": 3,
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ],
+     "sizeCount": 10,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 19,
+      "vw": 2.5,
+      "font": "VT323",
+      "text": "还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名"
+     },
+     "monoShare": 0.04,
+     "monoProseShare": 0.04,
+     "monoFamilies": [
+      "Press Start 2P",
+      "VT323"
+     ],
+     "monoSamples": [
+      "渡口",
+      "0",
+      "还没有选择商品",
+      "渡",
+      "发送"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.06,
+     "centerShare": 0.1,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f4efe2",
+     "bodyBgHsl": {
+      "h": 43,
+      "s": 0.45,
+      "l": 0.92
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#fffdf5",
+       "top": 48,
+       "hsl": {
+        "h": 48,
+        "s": 1,
+        "l": 0.98
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#0b0b0b",
+       "share": 0.45
+      },
+      {
+       "color": "#2b2b2b",
+       "share": 0.29
+      },
+      {
+       "color": "#6f6a5f",
+       "share": 0.25
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.01
+      },
+      {
+       "color": "#c9c4b8",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#fffdf5",
+      "hsl": {
+       "h": 48,
+       "s": 1,
+       "l": 0.98
+      },
+      "fg": "#0b0b0b"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 7,
+     "inHero": 7,
+     "radius": 0,
+     "height": 29,
+     "withShadow": 2,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "选择商品… ▾",
+      "仓库 0",
+      "生图",
+      "视频翻译",
+      "记账"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 4,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "button#btnProducts.btn-products → rgb(11, 11, 11) 2px 2px 0px 0px",
+      "button#btnWarehouse.btn-warehouse → rgb(11, 11, 11) 2px 2px 0px 0px",
+      "main.sheet → rgb(11, 11, 11) 4px 4px 0px 0px",
+      "div.bubble → rgb(11, 11, 11) 2px 2px 0px 0px"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 4,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 1,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 4,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 298
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "bg-image",
+      "ratio": 0.92
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 48,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 1024,
+    "margins": {
+     "left": 34,
+     "right": 34
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "还没有选择商品",
+      "size": 18,
+      "top": 68,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 34,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 19,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#f4efe2",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 34,
+     "right": 16
+    },
+    "hero": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "chars": 7,
+     "lines": 1,
+     "size": 18,
+     "vw": 2.3,
+     "font": "Press Start 2P",
+     "weight": 600,
+     "tracking": 0.04,
+     "leading": 1.5,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 7,
+     "radii": [
+      [
+       0,
+       7
+      ]
+     ],
+     "heavyBorders": 6,
+     "borderSamples": [
+      "#0b0b0b on #fffdf5 (19.33:1)",
+      "#0b0b0b on #fffdf5 (19.33:1)",
+      "#0b0b0b on #fffdf5 (19.33:1)"
+     ],
+     "heavyShadows": 2,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgb(11, 11, 11) 4px 4px 0px 0px",
+      "rgb(11, 11, 11) 2px 2px 0px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.3,
+     "tiny": 2,
+     "tinySamples": [
+      "翻译字幕 10px",
+      "记一笔 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ]
+    },
+    "title": {
+     "text": "还没有选择商品",
+     "size": 18,
+     "top": 68
+    },
+    "colourShare": 0.005
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.95
+   ],
+   "motion": {
+    "elements": 9,
+    "css": 9,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 844,
+     "screens": 1,
+     "words": 84,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "chars": 7,
+     "lines": 1,
+     "size": 18,
+     "vw": 4.6,
+     "font": "Press Start 2P",
+     "weight": 600,
+     "tracking": 0.04,
+     "leading": 1.5,
+     "top": 62,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "lines": 1,
+     "size": 18,
+     "font": "Press Start 2P"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "VT323",
+       "share": 0.93,
+       "mono": false
+      },
+      {
+       "family": "Press Start 2P",
+       "share": 0.04,
+       "mono": false
+      },
+      {
+       "family": "Segoe UI",
+       "share": 0.03,
+       "mono": false
+      }
+     ],
+     "familyCount": 3,
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ],
+     "sizeCount": 10,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 19,
+      "vw": 4.9,
+      "font": "VT323",
+      "text": "还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名"
+     },
+     "monoShare": 0.04,
+     "monoProseShare": 0.04,
+     "monoFamilies": [
+      "Press Start 2P",
+      "VT323"
+     ],
+     "monoSamples": [
+      "渡口",
+      "0",
+      "还没有选择商品",
+      "渡",
+      "发送"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.06,
+     "centerShare": 0.11,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f4efe2",
+     "bodyBgHsl": {
+      "h": 43,
+      "s": 0.45,
+      "l": 0.92
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#fffdf5",
+       "top": 48,
+       "hsl": {
+        "h": 48,
+        "s": 1,
+        "l": 0.98
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#0b0b0b",
+       "share": 0.44
+      },
+      {
+       "color": "#2b2b2b",
+       "share": 0.31
+      },
+      {
+       "color": "#6f6a5f",
+       "share": 0.23
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.01
+      },
+      {
+       "color": "#c9c4b8",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#fffdf5",
+      "hsl": {
+       "h": 48,
+       "s": 1,
+       "l": 0.98
+      },
+      "fg": "#0b0b0b"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 4,
+     "radius": 0,
+     "height": 32,
+     "withShadow": 2,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "选择商品… ▾",
+      "仓库 0",
+      "视频翻译",
+      "S Shopee ▾"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 4,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "button#btnProducts.btn-products → rgb(11, 11, 11) 2px 2px 0px 0px",
+      "button#btnWarehouse.btn-warehouse → rgb(11, 11, 11) 2px 2px 0px 0px",
+      "main.sheet → rgb(11, 11, 11) 4px 4px 0px 0px",
+      "div.bubble → rgb(11, 11, 11) 2px 2px 0px 0px"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 4,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 1,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 4,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 178
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "bg-image",
+      "ratio": 0.89
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 48,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 844,
+    "margins": {
+     "left": 26,
+     "right": 26
+    },
+    "sections": [
+     {
+      "sel": "div#chat.chat",
+      "tag": "div",
+      "top": 215,
+      "height": 411,
+      "words": 26,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 92,
+      "right": 56,
+      "textLeft": 105,
+      "textRight": 70,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.composer",
+      "tag": "div",
+      "top": 626,
+      "height": 176,
+      "words": 8,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 26,
+      "right": 26,
+      "textLeft": 26,
+      "textRight": 42,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": true
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "还没有选择商品",
+      "size": 18,
+      "top": 62,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 26,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 16,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#f4efe2",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 26,
+     "right": 26
+    },
+    "hero": {
+     "text": "还没有选择商品",
+     "words": 1,
+     "chars": 7,
+     "lines": 1,
+     "size": 18,
+     "vw": 4.6,
+     "font": "Press Start 2P",
+     "weight": 600,
+     "tracking": 0.04,
+     "leading": 1.5,
+     "top": 62,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 7,
+     "radii": [
+      [
+       0,
+       7
+      ]
+     ],
+     "heavyBorders": 6,
+     "borderSamples": [
+      "#0b0b0b on #fffdf5 (19.33:1)",
+      "#0b0b0b on #fffdf5 (19.33:1)",
+      "#0b0b0b on #fffdf5 (19.33:1)"
+     ],
+     "heavyShadows": 2,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgb(11, 11, 11) 4px 4px 0px 0px",
+      "rgb(11, 11, 11) 2px 2px 0px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.32,
+     "tiny": 3,
+     "tinySamples": [
+      "服务正常 · mock 0px",
+      "翻译字幕 10px",
+      "记一笔 10px"
+     ],
+     "sizes": [
+      0,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ]
+    },
+    "title": {
+     "text": "还没有选择商品",
+     "size": 18,
+     "top": 62
+    },
+    "colourShare": 0.012
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "palette-cream",
+   "width": 1440,
+   "message": "Yellow-cream background (page background #f4efe2, section #fffdf5, button #fffdf5).",
+   "fix": "Use the drawn palette. If you want warmth, take a low-chroma stone or bone, not a yellow cream.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "font-count",
+   "width": 1440,
+   "message": "3 typefaces in use (VT323, Press Start 2P, Segoe UI).",
+   "fix": "Two at most.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "hero-void",
+   "width": 1440,
+   "message": "34% of the first screen is one empty block (660×660px at 780,120).",
+   "fix": "Place the void on purpose or fill it: move the picture, the film or one fact into it, grow the headline to meet it, or shrink the screen to its content. A void reads as placed only when something closes it on the far side and it is the screen's one rest."
+  },
+  {
+   "level": "WARN",
+   "id": "heavy-borders",
+   "width": 1440,
+   "message": "5 panel borders are dark against their ground: #0b0b0b on #fffdf5 (19.33:1) | #0b0b0b on #fffdf5 (19.33:1) | #0b0b0b on #fffdf5 (19.33:1)",
+   "fix": "A panel border is a whisper: about 1.1–1.3:1 against its ground on a light screen (#e5e7eb–#ededed on white), and about 1.2–1.5:1 on a dark one (#1a1a1a on #000, #2e2e2e on #111). Darker lines turn the screen into a grid of boxes; keep the stronger line for controls.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "tiny-text",
+   "width": 390,
+   "message": "3 text blocks under 11px: 服务正常 · mock 0px, 翻译字幕 10px, 记一笔 10px.",
+   "fix": "Nothing below 11px; secondary text 12px, data 13–14px."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "C:\\Users\\20708\\Documents\\deepseek-harness\\default-workspace\\dukou-workbench\\.taste-skill\\pixel2\\desktop-fold.jpg",
+   "pages": [
+    "C:\\Users\\20708\\Documents\\deepseek-harness\\default-workspace\\dukou-workbench\\.taste-skill\\pixel2\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "C:\\Users\\20708\\Documents\\deepseek-harness\\default-workspace\\dukou-workbench\\.taste-skill\\pixel2\\tablet-fold.jpg",
+   "pages": [
+    "C:\\Users\\20708\\Documents\\deepseek-harness\\default-workspace\\dukou-workbench\\.taste-skill\\pixel2\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "C:\\Users\\20708\\Documents\\deepseek-harness\\default-workspace\\dukou-workbench\\.taste-skill\\pixel2\\mobile-fold.jpg",
+   "pages": [
+    "C:\\Users\\20708\\Documents\\deepseek-harness\\default-workspace\\dukou-workbench\\.taste-skill\\pixel2\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}
