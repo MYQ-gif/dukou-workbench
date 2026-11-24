@@ -1,4 +1,4 @@
-// 前端逻辑 —— 原生 ES Module，无框架、无构建
+﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -599,11 +599,14 @@ function shots(bubble, assets) {
   patchHistory(bubble.innerHTML);
 }
 
-function progressBubble(text) {
+function progressBubble(text, opts = {}) {
   const inner = $('#chat .chat-inner');
-  const el = say(inner, 'ai', `<p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
+  // 长任务（Seedance 出片要等几分钟）先播一个跑动 loader，真进度一到就收起来
+  const boot = opts.loader ? '<div class="duk-loader-wrap" aria-hidden="true"><span class="duk-loader"></span></div>' : '';
+  const el = say(inner, 'ai', `${boot}<p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
   const bar = el.querySelector('.bar i');
   const label = el.querySelector('.progress span');
+  const bootEl = el.querySelector('.duk-loader-wrap');
   // 弹簧步进：显示值追目标值，带一点过冲后落定，别一格一格跳
   let target = 0;
   let cur = 0;
@@ -629,6 +632,10 @@ function progressBubble(text) {
     update(pct, note) {
       target = Math.max(0, Math.min(100, Number(pct) || 0));
       if (note) tag = note;
+      if (bootEl && target > 8) {
+        bootEl.classList.add('done');
+        setTimeout(() => bootEl.remove(), 260);
+      }
       if (!raf) raf = requestAnimationFrame(frame);
     },
     done() { el.remove(); },
@@ -948,7 +955,7 @@ async function runPrepare(brief) {
   const pid = state.current.id;
   try {
     if (brief) await api(`/api/products/${pid}`, { method: 'PATCH', body: { brief } });
-    const prog = progressBubble('正在备料：精修 → 三视图 → 视觉规范');
+    const prog = progressBubble('正在备料：精修 → 三视图 → 视觉规范', { loader: true });
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
       body: { type: 'visual', productId: pid, params: { platform: state.platform, brief: brief || {}, realAngles: brief?.angles || [] } },
@@ -1035,7 +1042,7 @@ async function doClip(askText) {
     'user',
     `${text ? `<p>${esc(text)}</p>` : ''}${thumb}<p class="meta-line">商品短视频 · ${seconds}s · 720p · Seedance</p>`,
   );
-  const box = progressBubble('排队等 Seedance 出片…');
+  const box = progressBubble('排队等 Seedance 出片…', { loader: true });
   try {
     const { jobId } = await api('/api/jobs', {
       method: 'POST',

@@ -701,3 +701,37 @@ h1 { letter-spacing: -0.02em; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .toast .link { color: #f2c14e; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } .shots figure.drop { animation: none; } }
+
+/* ------------------------------------------------------------------
+ * From Uiverse.io by alexruix - https://uiverse.io/alexruix/tame-fly-42
+ * MIT License, Copyright (c) alexruix (Alex Ruiz)
+ * 改动：类名加 duk- 前缀避免碰撞；配色换成本站 token（球=--link，台阶=--rule 系）；
+ *       整体缩到 0.62 倍放得进气泡；加了 .done 收起。
+ * ------------------------------------------------------------------ */
+.duk-loader-wrap { height: 62px; display: flex; align-items: center; margin: 2px 0 6px;
+  transition: height 220ms var(--ease-out), opacity 220ms var(--ease-out); }
+.duk-loader-wrap.done { height: 0; opacity: 0; overflow: hidden; }
+.duk-loader { position: relative; width: 120px; height: 90px; margin: 0 auto; transform: scale(0.62); }
+.duk-loader::before {
+  content: ''; position: absolute; bottom: 30px; left: 50px; height: 30px; width: 30px;
+  border-radius: 50%; background: var(--link);
+  animation: dukBounce 0.5s ease-in-out infinite alternate;
+}
+.duk-loader::after {
+  content: ''; position: absolute; right: 0; top: 0; height: 7px; width: 45px; border-radius: 4px;
+  box-shadow: 0 5px 0 #dcd8cf, -35px 50px 0 #dcd8cf, -70px 95px 0 #dcd8cf;
+  animation: dukStep 1s ease-in-out infinite;
+}
+@keyframes dukBounce {
+  0% { transform: scale(1, 0.7); }
+  40% { transform: scale(0.8, 1.2); }
+  60% { transform: scale(1, 1); }
+  100% { bottom: 140px; }
+}
+@keyframes dukStep {
+  0% { box-shadow: 0 10px 0 rgba(0, 0, 0, 0), 0 10px 0 #dcd8cf, -35px 50px 0 #dcd8cf, -70px 90px 0 #dcd8cf; }
+  100% { box-shadow: 0 10px 0 #dcd8cf, -35px 50px 0 #dcd8cf, -70px 90px 0 #dcd8cf, -70px 90px 0 rgba(0, 0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .duk-loader::before, .duk-loader::after { animation: none; }
+}
