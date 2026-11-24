@@ -1,4 +1,4 @@
-// 前端逻辑 —— 原生 ES Module，无框架、无构建
+﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -45,6 +45,7 @@ async function loadProducts(preferId) {
     state.current = null;
     $('#hTitle').textContent = '还没有商品';
     $('#pMeta').textContent = '发张图或说句话就开始';
+    syncProductPicker();
     chatReset();
     return;
   }
@@ -54,7 +55,8 @@ async function loadProducts(preferId) {
     state.current = null;
     sel.value = '';
     $('#hTitle').textContent = '还没有选择商品';
-    $('#pMeta').textContent = items.length ? `已有 ${items.length} 个商品，下拉选一个，或直接说一句新建` : '发张图或说句话就开始';
+    $('#pMeta').textContent = items.length ? `已有 ${items.length} 个商品，点顶栏挑一个，或直接说一句新建` : '发张图或说句话就开始';
+    syncProductPicker();
     chatReset();
     loadLedger();
     renderWarehouse();
@@ -83,9 +85,54 @@ async function selectProduct(id, opts = {}) {
   if (p.platform) setPlatform(p.platform, false);
   $('#hTitle').textContent = p.title;
   refreshMeta();
+  syncProductPicker();
   if (!opts.keepChat) chatReset();
   loadLedger();
   renderWarehouse();
+}
+
+/* ---------------- 商品选择：按钮 + 抽屉（带搜索） ---------------- */
+
+function syncProductPicker() {
+  const name = $('#pdName');
+  if (name) name.textContent = state.current ? state.current.title : '选择商品…';
+  const count = state.products?.length || 0;
+  $('#pdFoot').textContent = count
+    ? `共 ${count} 个商品。没有？发张图或说一句「新建商品：名字」，我就建一个。`
+    : '还没有商品。发张图或说一句「新建商品：名字」，我就建一个。';
+  renderProductList();
+}
+
+function renderProductList() {
+  const box = $('#pdList');
+  const q = ($('#pdSearch').value || '').trim().toLowerCase();
+  const items = (state.products || []).filter((p) => !q || String(p.title).toLowerCase().includes(q));
+  if (!items.length) {
+    box.innerHTML = q
+      ? `<p class="pd-empty">没有匹配「${esc(q)}」的商品</p>`
+      : '<p class="pd-empty">还没有商品</p>';
+    return;
+  }
+  box.innerHTML = items
+    .map(
+      (p) => `<button class="pd-item ${state.current?.id === p.id ? 'active' : ''}" type="button" data-pick="${p.id}">
+        <span class="pd-item-t">${esc(p.title)}</span>
+        <span class="pd-item-d">${esc(pf(p.platform).name)} · ${esc(assetTally(p))}</span>
+      </button>`
+    )
+    .join('');
+}
+
+function pdOpen(open) {
+  $('#pd').classList.toggle('hidden', !open);
+  $('#pdMask').classList.toggle('hidden', !open);
+  $('#btnProducts').setAttribute('aria-expanded', String(open));
+  if (open) {
+    whOpen(false);
+    $('#pdSearch').value = '';
+    renderProductList();
+    setTimeout(() => $('#pdSearch').focus(), 30);
+  }
 }
 
 /* ---------------- 平台选择 ---------------- */
@@ -239,7 +286,7 @@ function chatReset() {
     say(
       inner,
       'ai',
-      `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，用上面那个下拉选它。'}</p>
+      `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名挑一个。'}</p>
      <p>选好平台，发一张商品原图再说要求——我出套图。</p>
      <p class="muted-sm">常用的几件事，点一下就开工；前几个会把话填进输入框，改两个字再发：</p>
        <div class="tiles">
@@ -1176,6 +1223,19 @@ document.addEventListener('click', (ev) => {
   if (!ev.target.closest('.pf-wrap')) $('#pfMenu').classList.add('hidden');
 });
 
+/* 商品抽屉 */
+$('#btnProducts').onclick = () => pdOpen($('#pd').classList.contains('hidden'));
+$('#pdClose').onclick = () => pdOpen(false);
+$('#pdMask').onclick = () => pdOpen(false);
+$('#pdSearch').addEventListener('input', renderProductList);
+$('#pdList').addEventListener('click', async (ev) => {
+  const btn = ev.target.closest('[data-pick]');
+  if (!btn) return;
+  pdOpen(false);
+  $('#prodSel').value = btn.dataset.pick;
+  await selectProduct(btn.dataset.pick);
+});
+
 /* 仓库 */
 $('#btnWarehouse').onclick = () => whOpen($('#wh').classList.contains('hidden'));
 $('#whClose').onclick = () => whOpen(false);
@@ -1189,6 +1249,7 @@ $('.wh-tabs').addEventListener('click', (ev) => {
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     whOpen(false);
+    pdOpen(false);
     $('#pfMenu').classList.add('hidden');
   }
 });

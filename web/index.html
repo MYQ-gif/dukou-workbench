@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -15,7 +15,12 @@
     <span class="brand-sub">一人做跨境的工作台</span>
   </div>
   <div class="prod-switch">
-    <select id="prodSel" aria-label="切换商品"></select>
+    <button id="btnProducts" class="btn-products" type="button" aria-expanded="false" aria-controls="pd">
+      <span id="pdName">选择商品…</span>
+      <span class="caret" aria-hidden="true">▾</span>
+    </button>
+    <!-- 真正的选择由按钮 + 抽屉驱动；select 保留给脚本与无障碍兜底 -->
+    <select id="prodSel" aria-label="切换商品" hidden></select>
   </div>
   <div class="topbar-right">
     <button id="btnWarehouse" class="btn-warehouse" type="button" aria-expanded="false" aria-controls="wh">
@@ -147,6 +152,18 @@
     <div id="endpoints" class="endpoints"></div>
   </section>
 </main>
+
+<!-- 商品抽屉：搜一个、点一下，比下拉好找 -->
+<div id="pdMask" class="pd-mask hidden"></div>
+<aside id="pd" class="pd hidden" aria-label="商品列表">
+  <div class="pd-head">
+    <h2>商品</h2>
+    <button id="pdClose" class="link" type="button" aria-label="关闭商品列表">关闭</button>
+  </div>
+  <input id="pdSearch" class="pd-search" type="search" placeholder="搜商品名…" autocomplete="off">
+  <div id="pdList" class="pd-list"></div>
+  <p id="pdFoot" class="pd-foot">没有？发张图或说一句「新建商品：名字」，我就建一个。</p>
+</aside>
 
 <!-- 仓库：生成出来的图和文案都落在这儿 -->
 <div id="whMask" class="wh-mask hidden"></div>
