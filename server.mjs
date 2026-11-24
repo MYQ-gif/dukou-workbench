@@ -1,4 +1,4 @@
-﻿// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
+// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
 // 规矩：零依赖，只 import Node 内置模块 + 本地 lib。
 // 契约见 CONTRACT.md，任何字段改动先改契约再改代码。
 import http from 'node:http';
@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import * as jobs from './lib/jobs.mjs';
 import * as ledger from './lib/ledger.mjs';
 import * as providers from './lib/providers.mjs';
+import * as visual from './lib/visual.mjs';
 import { mode as aiMode, providerStatus } from './lib/ai.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -175,6 +176,7 @@ const server = http.createServer(async (req, res) => {
         version: VERSION,
         counts: { products: db.products.length, assets: db.assets.length, jobs: db.jobs.length },
         providers: providerStatus(),
+        markets: visual.MARKETS.map((m) => ({ id: m.id, label: m.label, lang: m.lang })),
       });
     }
 
@@ -200,6 +202,7 @@ const server = http.createServer(async (req, res) => {
         title: body.title,
         category: body.category || 'general',
         platform: body.platform || 'shopee',
+        market: body.market || visual.defaultMarket(body.platform || 'shopee'),
         targetLangs: Array.isArray(body.targetLangs) ? body.targetLangs : ['en'],
         sellingPoints: Array.isArray(body.sellingPoints) ? body.sellingPoints : [],
         rawText: body.rawText || '',
@@ -242,7 +245,7 @@ const server = http.createServer(async (req, res) => {
 
       if (m === 'PATCH') {
         const body = await readJSON(req);
-        const allowed = ['title', 'category', 'platform', 'targetLangs', 'sellingPoints', 'rawText', 'status', 'brief'];
+        const allowed = ['title', 'category', 'platform', 'market', 'targetLangs', 'sellingPoints', 'rawText', 'status', 'brief'];
         for (const key of allowed) {
           if (key in body) product[key] = body[key];
         }

@@ -3,7 +3,7 @@
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-const state = { products: [], current: null, tab: 'image', lastUpload: null, video: null, platform: 'shopee', whTab: 'image' };
+const state = { products: [], current: null, tab: 'image', lastUpload: null, video: null, platform: 'shopee', market: 'sg', whTab: 'image' };
 
 /* 平台表：和 lib/ai.mjs 的 PLATFORMS 保持一致（id / 名字 / 规格 / 图标色） */
 const PLATFORMS = [
@@ -76,13 +76,15 @@ function assetTally(p) {
 function refreshMeta() {
   const p = state.current;
   if (!p) return;
-  $('#pMeta').textContent = [pf(p.platform).name, (p.targetLangs || []).join(' / '), assetTally(p)].filter(Boolean).join(' · ');
+  const mk = $('#marketSel')?.selectedOptions[0]?.textContent || '';
+  $('#pMeta').textContent = [pf(p.platform).name, mk, (p.targetLangs || []).join(' / '), assetTally(p)].filter(Boolean).join(' · ');
 }
 
 async function selectProduct(id, opts = {}) {
   state.current = await api(`/api/products/${id}`);
   const p = state.current;
   if (p.platform) setPlatform(p.platform, false);
+  setMarket(p.market || 'us', false);
   $('#hTitle').textContent = p.title;
   refreshMeta();
   syncProductPicker();
@@ -140,6 +142,8 @@ function pdOpen(open) {
 function setPlatform(id, remember = true) {
   const p = pf(id);
   state.platform = p.id;
+  // 平台换了且这个商品还没手动选过市场 → 跟平台默认市场走
+  if (remember && (!state.current || !state.current.market)) setMarket(DEFAULT_MARKET[p.id] || 'us', false);
   $('#pfName').textContent = p.name;
   const chip = $('#pfChip');
   chip.textContent = p.short;
@@ -153,8 +157,30 @@ function setPlatform(id, remember = true) {
   }
 }
 
-function buildPlatformMenu() {
-  const item = (p) => `<button class="pf-item" data-pf="${p.id}" type="button">
+/* 目标市场：决定提示词里的文化适配（不是翻译，是改写） */
+const DEFAULT_MARKET = { taobao: 'cn', xianyu: 'cn', jd: 'cn', shopee: 'sg', lazada: 'sg', tiktok: 'sg', amazon: 'us', ebay: 'us' };
+
+function setMarket(id, remember = true) {
+  const sel = $('#marketSel');
+  if (!sel) return;
+  const next = id && [...sel.options].some((o) => o.value === id) ? id : sel.value || 'us';
+  state.market = next;
+  sel.value = next;
+  if (remember && state.current && (state.current.market || 'us') !== next) {
+    api(`/api/products/${state.current.id}`, { method: 'PATCH', body: { market: next } }).catch(() => {});
+    state.current.market = next;
+  }
+}
+
+function fillMarkets(list) {
+  const sel = $('#marketSel');
+  if (!sel || !Array.isArray(list) || !list.length) return;
+  const cur = state.market || sel.value || 'us';
+  sel.innerHTML = list.map((m) => `<option value="${m.id}">${m.label}</option>`).join('');
+  setMarket(cur, false);
+}
+
+function buildPlatformMenu() {  const item = (p) => `<button class="pf-item" data-pf="${p.id}" type="button">
       <span class="pf-chip" style="background:${p.color};color:${['#f5c518', '#ff9900', '#f2c14e'].includes(p.color) ? '#1a1a1a' : '#fff'}">${p.short}</span>
       <span class="pf-label">${p.name}</span>
       <span class="pf-size">${p.w}×${p.h}</span>
@@ -288,39 +314,23 @@ function chatReset() {
       'ai',
       `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名挑一个。'}</p>
      <p>选好平台，发一张商品原图再说要求——我出套图。</p>
-     <p class="muted-sm">常用的几件事，点一下就开工；前几个会把话填进输入框，改两个字再发：</p>
+     <p class="muted-sm">从这四件事开始，点一下就跑；问到的参数会先跟你确认：</p>
        <div class="tiles">
-         <button class="tile" type="button" data-fill="做一张白底主图，标题写 STAY A WHILE.">
-           <span class="tile-t">出主图</span>
-           <span class="tile-d">按平台尺寸出 1–6 张，带英文标题</span>
-         </button>
-         <button class="tile" type="button" data-fill="用这张商品图出一段 5 秒短视频，缓慢推近，暖光">
-           <span class="tile-t">出商品短视频</span>
-           <span class="tile-d">一张图生成 5 秒运镜，Seedance</span>
-         </button>
-         <button class="tile" type="button" data-fill="把这张图的卖点写成英文 listing 文案">
-           <span class="tile-t">写 listing 文案</span>
-           <span class="tile-d">标题 + 三条卖点 + 一段描述，可直接复制</span>
-         </button>
-         <button class="tile" type="button" data-fill="把这段口播视频翻成泰语字幕">
-           <span class="tile-t">翻视频字幕</span>
-           <span class="tile-d">保留原声，出目标语言字幕轨</span>
-         </button>
          <button class="tile" type="button" data-fill="出一版详情页，六段齐全">
-           <span class="tile-t">出详情页</span>
+           <span class="tile-t">1. 详细页</span>
            <span class="tile-d">品牌 → 卖点 → 细节 → 功能 → 场景 → 购买理由</span>
          </button>
          <button class="tile" type="button" data-fill="这批买家会问什么？顺便把形容词换成数字">
-           <span class="tile-t">买家会问什么</span>
-           <span class="tile-d">问题库 + 事实锚点 + 六层关键词</span>
+           <span class="tile-t">2. 卖家会问什么</span>
+           <span class="tile-d">问题库 + 事实锚点 + 六层关键词，照着改详情</span>
+         </button>
+         <button class="tile" type="button" data-fill="出一张营销海报，标题写 STAY A WHILE，突出实木手工">
+           <span class="tile-t">3. 营销海报</span>
+           <span class="tile-d">竖版海报，标题 + 三条卖点，按市场配色</span>
          </button>
          <button class="tile" type="button" data-fill="Hi, we are a furniture retailer in Ho Chi Minh City. We need 200 pcs, 1.2m, natural finish. What is your FOB price and lead time? Do you have fumigation certificate? We prefer T/T 30% deposit.">
-           <span class="tile-t">询盘回信</span>
-           <span class="tile-d">贴一段买家来信，抽要素、标风险、出回信</span>
-         </button>
-         <button class="tile" type="button" data-tab="ledger">
-           <span class="tile-t">记一笔账</span>
-           <span class="tile-d">收入、运费、广告，随手记，随时看利润</span>
+           <span class="tile-t">4. 询盘回信</span>
+           <span class="tile-d">贴一段买家来信，抽要素、标风险、出多语回信</span>
          </button>
        </div>`,
       { persist: false }
@@ -376,6 +386,7 @@ async function ensureProduct(text, fileName) {
       title: title.slice(0, 40),
       platform: state.platform,
       sellingPoints: [],
+      market: state.market || 'us',
       rawText: wantsNew ? '' : String(text || ''),
       targetLangs: ['en'],
     },
@@ -500,6 +511,11 @@ function askParams({ title, thumb, ask, known = {} }) {
   if (!need.count && !need.size && !need.quality) return Promise.resolve(resolveOpts(st));
 
   const inner = $('#chat .chat-inner');
+  // 上一张没人答的参数卡先收掉，别叠两张
+  document.querySelectorAll('#chat .msg.ai .ask-q').forEach((q) => {
+    const m = q.closest('.msg');
+    if (m && m.querySelector('.ask-foot')) m.remove();
+  });
   const left = [need.count && '几张', need.size && '多大', need.quality && '多清晰'].filter(Boolean).join('、');
 
   const el = say(inner, 'ai', `
@@ -732,7 +748,7 @@ async function doImage(askText, opts) {
   await ensureProduct(text, state.lastUploadName);
   const inner = $('#chat .chat-inner');
   const before = new Set((state.current.assets || []).map((a) => a.id));
-  const tpl = $('#template').value;
+  const tpl = opts?.template || $('#template').value;
   const lang = $('#imgLang').value;
   const platformId = state.platform;
   const count = opts?.count || (tpl === 'detail' ? 3 : 2);
@@ -1102,9 +1118,13 @@ $('#file').onchange = async (ev) => {
 $('#chat').addEventListener('click', (ev) => {
   const chip = ev.target.closest('.starter, .tile');
   if (!chip) return;
+  if (chip.dataset.tab) {
+    switchTab(chip.dataset.tab);
+    return;
+  }
+  // 点入口 = 直接开工；该问的参数（张数/尺寸/清晰度、素材五问）仍会先弹出来
   $('#ask').value = chip.dataset.fill || chip.textContent;
-  $('#ask').focus();
-  $('#ask').setSelectionRange($('#ask').value.length, $('#ask').value.length);
+  $('#btnSend').click();
 });
 
 $('#btnSend').onclick = async () => {
@@ -1133,6 +1153,7 @@ $('#btnSend').onclick = async () => {
   // 有图，或者话里明显是在要图 → 话里已经说清的参数不再问，只补没说的
   if (state.lastUpload || IMAGE_WORDS.test(ask) || !ask) {
     const known = readIntent(ask);
+    const poster = /海报|poster/i.test(ask);
     const opts = await askParams({
       title: state.current ? state.current.title : '新商品',
       thumb: state.lastUploadPreview,
@@ -1140,7 +1161,7 @@ $('#btnSend').onclick = async () => {
       known,
     });
     if (!opts) { $('#ask').value = ask; return; }
-    doImage(ask, opts);
+    doImage(ask, poster ? { ...opts, template: 'marketing' } : opts);
     return;
   }
   doImage(ask);
@@ -1222,6 +1243,7 @@ $('#pfMenu').addEventListener('click', (ev) => {
 document.addEventListener('click', (ev) => {
   if (!ev.target.closest('.pf-wrap')) $('#pfMenu').classList.add('hidden');
 });
+$('#marketSel').addEventListener('change', (ev) => setMarket(ev.target.value));
 
 /* 商品抽屉 */
 $('#btnProducts').onclick = () => pdOpen($('#pd').classList.contains('hidden'));
@@ -1273,7 +1295,8 @@ async function loadMeta() {
   const box = $('#providers');
   if (!box) return;
   try {
-    const { providers } = await api('/api/meta');
+    const { providers, markets } = await api('/api/meta');
+    fillMarkets(markets);
     box.innerHTML = providers.caps
       .map((c) => {
         const state = providers.mock
