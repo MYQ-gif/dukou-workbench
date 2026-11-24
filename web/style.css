@@ -547,3 +547,14 @@ h1 { letter-spacing: -0.02em; }
 /* 商品短视频（Seedance）与首帧预览 */
 .bubble .clip, .clip { display: block; max-width: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--rule); margin: 6px 0 4px; background: #000; }
 .bubble .thumb-lg, .thumb-lg { display: block; max-width: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--rule); margin: 6px 0 4px; }
+
+/* 补素材卡：输入框更宽、色板、仓库分组 */
+.opt-row .in.wide { flex: 1 1 320px; width: 100%; max-width: 420px; }
+.spec { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; }
+.spec .sw { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(10,46,92,.14); display: inline-block; }
+.spec .spec-t { font-size: 12px; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.wh-group { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--ink); margin: 14px 0 8px; display: flex; align-items: baseline; gap: 8px; }
+.wh-group .muted { font-weight: 400; font-size: 11px; }
+.wh-item figcaption .chip-real, .wh-item figcaption .chip-ref { margin-left: 6px; padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+.wh-item figcaption .chip-real { background: #e7f2ec; color: #1f7a4d; }
+.wh-item figcaption .chip-ref { background: #eaf1f7; color: var(--link); }

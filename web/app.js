@@ -77,13 +77,13 @@ function refreshMeta() {
   $('#pMeta').textContent = [pf(p.platform).name, (p.targetLangs || []).join(' / '), assetTally(p)].filter(Boolean).join(' · ');
 }
 
-async function selectProduct(id) {
+async function selectProduct(id, opts = {}) {
   state.current = await api(`/api/products/${id}`);
   const p = state.current;
   if (p.platform) setPlatform(p.platform, false);
   $('#hTitle').textContent = p.title;
   refreshMeta();
-  chatReset();
+  if (!opts.keepChat) chatReset();
   loadLedger();
   renderWarehouse();
 }
@@ -122,15 +122,16 @@ function buildPlatformMenu() {
 function whAssets() {
   const assets = state.current?.assets || [];
   return {
-    images: assets.filter((a) => a.kind !== 'upload' && a.kind !== 'copy'),
+    base: assets.filter((a) => a.kind === 'refined' || a.kind === 'angle' || a.kind === 'angle_real'),
+    images: assets.filter((a) => ['main', 'marketing', 'detail', 'sub'].includes(a.kind)),
     copies: assets.filter((a) => a.kind === 'copy'),
   };
 }
 
 function renderWarehouse() {
-  const { images, copies } = whAssets();
-  $('#whCount').textContent = images.length + copies.length;
-  $('#whImgNum').textContent = images.length;
+  const { base, images, copies } = whAssets();
+  $('#whCount').textContent = base.length + images.length + copies.length;
+  $('#whImgNum').textContent = base.length + images.length;
   $('#whCopyNum').textContent = copies.length;
   $$('.wh-tab').forEach((t) => t.classList.toggle('active', t.dataset.wh === state.whTab));
 
@@ -140,21 +141,25 @@ function renderWarehouse() {
     return;
   }
   if (state.whTab === 'image') {
-    if (!images.length) {
+    if (!base.length && !images.length) {
       body.innerHTML = '<p class="muted">还没有图。回「生图」发一句，出来的图会自动进这里。</p>';
       return;
     }
-    body.innerHTML = `<div class="wh-grid">${images
-      .slice()
-      .reverse()
-      .map(
-        (a) => `<figure class="wh-item">
-          <img src="${a.url}" alt="" data-open="${a.url}">
-          <figcaption>${esc(a.meta?.template || a.kind)} · ${a.width}×${a.height}
-            <span class="muted">${esc(pf(a.meta?.platform).name)}</span></figcaption>
-        </figure>`
-      )
-      .join('')}</div>`;
+    const card = (a) => {
+      const isReal = a.kind === 'angle_real';
+      const label =
+        a.kind === 'refined' ? `精修 · ${a.meta?.crop || '1:1'}` : a.kind === 'angle' ? `视角 · ${a.meta?.angle || ''}` : a.meta?.template || a.kind;
+      return `<figure class="wh-item">
+        <img src="${a.url}" alt="" data-open="${a.url}">
+        <figcaption>${esc(label)} · ${a.width}×${a.height}
+          ${isReal ? '<span class="chip-real">实拍</span>' : a.meta?.usedRefined ? '<span class="chip-ref">引精修</span>' : ''}
+        </figcaption>
+      </figure>`;
+    };
+    body.innerHTML = [
+      base.length ? `<h4 class="wh-group">基底素材 <span class="muted">备料产物，后续出图会引用</span></h4><div class="wh-grid">${base.map(card).join('')}</div>` : '',
+      images.length ? `<h4 class="wh-group">成品图</h4><div class="wh-grid">${images.slice().reverse().map(card).join('')}</div>` : '',
+    ].join('');
     body.querySelectorAll('[data-open]').forEach((img) => {
       img.onclick = () => window.open(img.dataset.open, '_blank');
     });
@@ -508,6 +513,128 @@ const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
 const CLIP_WORDS = /视频|短片|短视频|运镜|动起来|片头/;
 const IMAGE_ONLY = /主图|详情图|白底图|海报|套图/;
 
+/* ---------------- 补素材：先问再动手 ---------------- */
+
+const ANGLES = [
+  ['front', '正面'],
+  ['deg45', '45°'],
+  ['side_right', '侧面'],
+  ['back', '背面'],
+];
+const USAGE = [
+  ['main', '电商主图'],
+  ['social', '社交种草'],
+  ['detail', '详情页'],
+  ['all', '都做'],
+];
+
+function askBrief({ title, thumb }) {
+  const inner = $('#chat .chat-inner');
+  const el = say(inner, 'ai', `
+    <p class="ask-q">先问几句，出图能准很多——都能跳过。</p>
+    <div class="ask-sub">${esc(title || '新商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
+    <div class="opt">
+      <div class="opt-label">手上有哪些实拍角度<span class="opt-hint">有的直接说，省一次生成</span></div>
+      <div class="opt-row" data-k="angles">
+        ${ANGLES.map(([v, t]) => `<button type="button" class="chip" data-v="${v}">${t}</button>`).join('')}
+      </div>
+    </div>
+    <div class="opt">
+      <div class="opt-label">用在哪儿</div>
+      <div class="opt-row" data-k="usage">
+        ${USAGE.map(([v, t]) => `<button type="button" class="chip${v === 'main' ? ' on' : ''}" data-v="${v}">${t}</button>`).join('')}
+      </div>
+    </div>
+    <div class="opt">
+      <div class="opt-label">要不要模特<span class="opt-hint">服饰美妆才需要</span></div>
+      <div class="opt-row" data-k="model">
+        <button type="button" class="chip on" data-v="no">不用</button>
+        <button type="button" class="chip" data-v="yes">要</button>
+      </div>
+    </div>
+    <div class="opt">
+      <div class="opt-label">一句话卖点<span class="opt-hint">写你自己的说法最好</span></div>
+      <div class="opt-row"><input class="in wide" id="briefSelling" placeholder="实木手工、老料新做…"></div>
+    </div>
+    <div class="opt">
+      <div class="opt-label">市场客单价</div>
+      <div class="opt-row" data-k="price">
+        <button type="button" class="chip" data-v="low">低</button>
+        <button type="button" class="chip on" data-v="mid">中</button>
+        <button type="button" class="chip" data-v="high">高</button>
+      </div>
+    </div>
+    <div class="ask-foot">
+      <button type="button" class="link" data-act="skip">先出图，回头再说</button>
+      <button type="button" class="btn-primary" data-act="go">存下来并备料</button>
+    </div>
+  `, { persist: false });
+
+  const st = { angles: [], usage: 'main', model: 'no', price: 'mid' };
+  const bubble = el.querySelector('.bubble');
+  const selling = el.querySelector('#briefSelling');
+
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      const brief = ok ? { ...st, selling: selling.value.trim(), askedAt: new Date().toISOString() } : { askedAt: new Date().toISOString() };
+      bubble.innerHTML = `<p class="ask-done">${ok ? '记下了。正在精修和出三视图…' : '好，先出图。素材回头再补也行。'}</p>`;
+      patchHistory(bubble.innerHTML);
+      resolve(brief);
+    };
+    el.addEventListener('click', (ev) => {
+      const chip = ev.target.closest('.chip');
+      if (chip) {
+        const k = chip.closest('.opt-row').dataset.k;
+        if (k === 'angles') {
+          chip.classList.toggle('on');
+          st.angles = [...el.querySelectorAll('.opt-row[data-k="angles"] .chip.on')].map((c) => c.dataset.v);
+        } else {
+          el.querySelectorAll(`.opt-row[data-k="${k}"] .chip`).forEach((c) => c.classList.toggle('on', c === chip));
+          st[k] = chip.dataset.v;
+        }
+        return;
+      }
+      const act = ev.target.closest('[data-act]');
+      if (act) finish(act.dataset.act === 'go');
+    });
+  });
+}
+
+/** 存 brief → 跑备料任务（精修 2 + 三视图 3 + 视觉规范） */
+async function runPrepare(brief) {
+  if (!state.current) return null;
+  const inner = $('#chat .chat-inner');
+  const pid = state.current.id;
+  try {
+    if (brief) await api(`/api/products/${pid}`, { method: 'PATCH', body: { brief } });
+    const prog = progressBubble('正在备料：精修 → 三视图 → 视觉规范');
+    const { jobId } = await api('/api/jobs', {
+      method: 'POST',
+      body: { type: 'visual', productId: pid, params: { platform: state.platform, brief: brief || {}, realAngles: brief?.angles || [] } },
+    });
+    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, job.type));
+    prog.done();
+    await selectProduct(pid, { keepChat: true });
+    const spec = res.spec || {};
+    const all = state.current?.assets || [];
+    const mine = (res.assets || []).map((id) => all.find((a) => a.id === id)).filter(Boolean);
+    const pal = spec.palette || {};
+    say(inner, 'ai', `
+      <p>素材备好了 ${mine.length} 张，放在仓库的「基底素材」里。</p>
+      <p class="muted-sm">${esc(spec.category || '')}${spec.category ? ' · ' : ''}${esc(spec.lighting || '')}</p>
+      ${pal.base ? `<div class="spec">${['base', 'accent', 'support'].map((k) => (pal[k] ? `<span class="sw" style="background:${pal[k]}" title="${k} ${pal[k]}"></span>` : '')).join('')}<span class="spec-t">视觉规范 v${spec.version || 1}</span></div>` : ''}
+    `);
+    if (mine.length) shots(inner.lastElementChild, mine);
+    return res;
+  } catch (e) {
+    say(inner, 'ai', `<p>备料没跑通：${esc(e.message)}</p><p class="muted-sm">不影响出图，可以直接说要求。</p>`);
+    return null;
+  }
+}
+
 async function doImage(askText, opts) {
   const text = String(askText || '').trim();
   if (!state.current && !text && !state.lastUpload) {
@@ -731,6 +858,12 @@ $('#file').onchange = async (ev) => {
     state.lastUploadName = file.name;
     state.lastUploadPreview = URL.createObjectURL(file);
     $('#attachInfo').textContent = `已附：${file.name}（${(file.size / 1024).toFixed(0)}KB）`;
+    // 第一次拿到图：先问素材，同时不挡着出图
+    const p = state.current;
+    if (p && !p.brief?.askedAt) {
+      const brief = await askBrief({ title: p.title, thumb: state.lastUploadPreview });
+      runPrepare(brief);
+    }
   } catch (e) {
     alert(e.message);
   }

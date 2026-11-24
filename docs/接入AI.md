@@ -119,3 +119,23 @@ node scripts/aitest.mjs
 | `没配 VIDEO_API_KEY` | `.env` 里少了 VIDEO 三项，或没重启服务 |
 | `Seedance 失败：…` | 首帧图太大/格式不支持，或模型 ID 写错 |
 | `Seedance 超时（等了 240s…）` | 队列拥挤，换 lite 模型或缩短时长重试 |
+
+## 出图提示词是怎么拼的（画质相关）
+
+`lib/ai.mjs` 的 `imagePrompt()` 现在按这个顺序拼，最后交给供应商：
+
+1. **主体与占比**：`Professional e-commerce <kind> of "<标题>"`，产品占画面 70%，真实比例
+2. **类目方向**（`lib/visual.mjs` 的 12 类目）：场景 / 光位 / 关键词 / 三色调色板
+3. **视觉规范 spec**：lighting、composition、mood（同一商品所有物料共用，保证成套一致）
+4. **卖点**：3 条以内，要求「能被看见」而不是念一遍
+5. **卖家原话**（`product.brief.selling`）与商品描述
+6. **用户这一句要求**
+7. **镜头与画质约束**：full-frame / 50mm / soft key + rim light / true-to-life colour / 自然材质 / 无塑料反光 / 无过饱和 / 无 HDR 辉光
+8. **负向**：`Avoid: warped geometry, extra parts, floating objects, fake bokeh, text, watermark, logo, extra props`
+9. **尺寸与安全区**：目标宽高 + 平台名 + 标题留白
+
+硅基流动（`/siliconflow/`）另外带 `negative_prompt`、`num_inference_steps: 28`、`guidance_scale: 7`；如果有 `refined` 资产，会作为图生图参考（`image: dataUri`）一起发过去。
+
+一条实例（家居 / Shopee 1242×1660）见 `node scripts/promptcheck.mjs` 的输出。
+
+注：spec 里的类目与光位是中文，Kolors / 通义系能读；换纯英文模型（Flux、SDXL）时建议把 `CATEGORIES` 的 `light/scene/words` 也补一份英文，否则会掉细节。
