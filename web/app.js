@@ -263,12 +263,53 @@ async function whDeletePicked() {
   refreshMeta();
   renderWhBar();
   renderWarehouse();
+  toast(`已删除 ${ids.length} 张`, async () => {
+    for (const id of ids) await api(`/api/assets/${id}/restore`, { method: 'POST' }).catch(() => {});
+    state.current = await api(`/api/products/${state.current.id}`);
+    refreshMeta();
+    renderWarehouse();
+    toast('已恢复');
+  });
+}
+
+/* 底部提示条：删除这类可逆操作给 6 秒后悔时间 */
+let toastTimer = null;
+function toast(text, onUndo) {
+  const el = $('#toast');
+  if (!el) return;
+  $('#toastText').textContent = text;
+  const btn = $('#toastUndo');
+  btn.classList.toggle('hidden', !onUndo);
+  btn.onclick = async () => {
+    el.classList.remove('show');
+    if (onUndo) await onUndo();
+  };
+  el.classList.remove('hidden');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), onUndo ? 6000 : 2400);
+  el.addEventListener(
+    'transitionend',
+    () => {
+      if (!el.classList.contains('show')) el.classList.add('hidden');
+    },
+    { once: true },
+  );
 }
 
 function renderWarehouse() {
   const { base, images, copies, content, inquiry } = whAssets();
   const texts = copies.length + content.length + inquiry.length;
-  $('#whCount').textContent = base.length + images.length + texts;
+  const total = base.length + images.length + texts;
+  $('#whCount').textContent = total;
+  if (state.lastWhCount != null && total > state.lastWhCount) {
+    const btn = $('#btnWarehouse');
+    btn.classList.remove('bump');
+    void btn.offsetWidth;
+    btn.classList.add('bump');
+  }
+  state.lastWhCount = total;
   $('#whImgNum').textContent = base.length + images.length;
   $('#whCopyNum').textContent = texts;
   $$('.wh-tab').forEach((t) => t.classList.toggle('active', t.dataset.wh === state.whTab));
@@ -539,8 +580,10 @@ function say(container, who, html, opts = {}) {
 function shots(bubble, assets) {
   const wrap = document.createElement('div');
   wrap.className = 'shots';
-  for (const a of assets) {
+  assets.forEach((a, i) => {
     const fig = document.createElement('figure');
+    fig.className = 'drop';
+    fig.style.animationDelay = `${i * 45}ms`;
     fig.innerHTML = `<img src="${a.url}" alt=""><figcaption>${a.kind} · ${a.width}×${a.height}</figcaption>`;
     const img = fig.querySelector('img');
     img.onclick = () => window.open(a.url, '_blank');
@@ -549,7 +592,9 @@ function shots(bubble, assets) {
       if (scroller) scroller.scrollTop = scroller.scrollHeight;
     };
     wrap.appendChild(fig);
-  }
+  });
+  // 三张以上改成横向吸附条，别把气泡撑成一堵墙
+  if (assets.length > 3) wrap.classList.add('many');
   bubble.appendChild(wrap);
   patchHistory(bubble.innerHTML);
 }
@@ -1136,7 +1181,7 @@ async function doDetail(askText) {
       .join('');
     say(inner, 'ai', `
       <p>六段出好了${r.errors?.length ? `（${r.errors.length} 段失败）` : ''}，文案在下面，图在仓库。</p>
-      <div class="shots">${shots}</div>
+      <div class="shots many">${shots}</div>
       <h3>每段文案</h3><ul>${copies}</ul>
       <p class="muted-sm">${esc(r.note || '')}</p>`);
     refreshMeta();

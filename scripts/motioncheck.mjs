@@ -1,4 +1,4 @@
-﻿// 动效自测：仓库多选 / 删除 / 波形 / 张数滑块 / 新消息揭示类
+// 动效自测：仓库多选 / 删除 / 波形 / 张数滑块 / 新消息揭示类
 import fs from 'node:fs';
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-motion.png';
@@ -53,6 +53,12 @@ await evalJs(`document.querySelector('#whDel').click(); true`);
 await wait(1200);
 const after = await evalJs(`({ items: document.querySelectorAll('.wh-item').length, picked: document.querySelectorAll('.wh-item.picked').length })`);
 console.log('删除后', JSON.stringify(after));
+const toastState = await evalJs(`({ shown: document.querySelector('#toast').classList.contains('show'), text: document.querySelector('#toastText').textContent, undo: !document.querySelector('#toastUndo').classList.contains('hidden') })`);
+console.log('撤销条', JSON.stringify(toastState));
+await shot(out.replace('.png', '-toast.png'));
+await evalJs(`document.querySelector('#toastUndo').click(); true`);
+await wait(1400);
+console.log('恢复后', await evalJs(`document.querySelectorAll('.wh-item').length`));
 
 // 参数卡滑块 + 波纹 + fresh 类
 await evalJs(`document.querySelector('#whClose')?.click(); true`);

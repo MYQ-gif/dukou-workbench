@@ -1,4 +1,4 @@
-﻿// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
+// 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
 // 规矩：零依赖，只 import Node 内置模块 + 本地 lib。
 // 契约见 CONTRACT.md，任何字段改动先改契约再改代码。
 import http from 'node:http';
@@ -298,27 +298,39 @@ const server = http.createServer(async (req, res) => {
       return send(res, 201, { assetId: asset.id, url: asset.url, width, height });
     }
 
-    /* ---- 6b. DELETE /api/assets/:id ---- */
+    /* ---- 6b. DELETE /api/assets/:id（软删，可撤销） ---- */
     const assetMatch = p.match(/^\/api\/assets\/([A-Za-z0-9_]+)$/);
     if (assetMatch) {
-      if (m !== 'DELETE') return fail(res, 405, 'METHOD_NOT_ALLOWED', 'use DELETE');
       const assetId = assetMatch[1];
-      const idx = db.assets.findIndex((a) => a.id === assetId);
-      if (idx < 0) return fail(res, 404, 'NOT_FOUND', 'asset not found');
-      const asset = db.assets[idx];
-      db.assets.splice(idx, 1);
+      const asset = db.assets.find((a) => a.id === assetId);
+      if (m !== 'DELETE') return fail(res, 405, 'METHOD_NOT_ALLOWED', 'use DELETE');
+      if (!asset) return fail(res, 404, 'NOT_FOUND', 'asset not found');
+      asset.deletedAt = nowISO();
       for (const product of db.products) {
         if (!Array.isArray(product.assets)) continue;
         const before = product.assets.length;
         product.assets = product.assets.filter((x) => x !== assetId);
         if (product.assets.length !== before) product.updatedAt = nowISO();
       }
-      if (asset.url && asset.url.startsWith('/files/')) {
-        const file = path.join(UPLOAD_DIR, path.basename(asset.url));
-        fs.promises.unlink(file).catch(() => {});
+      persist();
+      return send(res, 200, { deleted: assetId, undo: true });
+    }
+
+    /* ---- 6c. POST /api/assets/:id/restore（撤销删除） ---- */
+    const restoreMatch = p.match(/^\/api\/assets\/([A-Za-z0-9_]+)\/restore$/);
+    if (restoreMatch) {
+      if (m !== 'POST') return fail(res, 405, 'METHOD_NOT_ALLOWED', 'use POST');
+      const asset = db.assets.find((a) => a.id === restoreMatch[1]);
+      if (!asset) return fail(res, 404, 'NOT_FOUND', 'asset not found');
+      delete asset.deletedAt;
+      const product = db.products.find((x) => x.id === asset.productId);
+      if (product) {
+        product.assets = product.assets || [];
+        if (!product.assets.includes(asset.id)) product.assets.push(asset.id);
+        product.updatedAt = nowISO();
       }
       persist();
-      return send(res, 200, { deleted: assetId });
+      return send(res, 200, { restored: asset.id });
     }
 
     /* ---- 7. POST /api/jobs ---- */

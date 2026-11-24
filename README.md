@@ -106,6 +106,10 @@ data/             运行时数据（db.json + uploads/），不进 git
 | 参数卡「要几张」 | 速度吸附滑块 | 松手按拖动速度多走一格再吸附整数 |
 | 任务进度条 | 弹簧步进 | rAF 弹簧追目标值，不再一格一格跳 |
 | tab / chip / 平台项 / 按钮 | 波纹 | 点击处涟漪，只给开关类控件 |
-| 仓库删图 | 弧形折叠 | `clip-path + rotate` 收走后再删 |
+| 仓库删图 | 弧形折叠 | `clip-path + rotate` 收走后再删，6 秒内可撤销 |
+| 一条消息多张图 | 横向吸附 | 三张以上改为 scroll-snap 横条，不再堆成一墙 |
+| 出图落袋 | 落入 | 新图从上方压下来，仓库计数同时弹一下 |
 
 规则：所有动效在 `prefers-reduced-motion: reduce` 下关闭；不引入渐变与光晕，uiverse 上只借手法不贴颜色。
+
+撤销：`DELETE /api/assets/:id` 是软删（记 `deletedAt` 并从商品里摘掉），`POST /api/assets/:id/restore` 能放回去；底部提示条 6 秒内可点「撤销」。

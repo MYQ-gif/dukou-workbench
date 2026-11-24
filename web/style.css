@@ -674,3 +674,30 @@ h1 { letter-spacing: -0.02em; }
   .msg.ai.fresh .bubble > *, .wh-item, .wh-item.removing, .wh-grid.settling { animation: none !important; }
   .ripple { display: none; }
 }
+
+/* ============ 补充三项：吸附条 / 落入 / 撤销 ============ */
+
+/* 图集：三张以上横向吸附，速度快时自己滑到位 */
+.shots.many { display: grid; grid-auto-flow: column; grid-auto-columns: 132px; gap: 10px;
+  overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  padding-bottom: 6px; scrollbar-width: thin; }
+.shots.many figure { scroll-snap-align: start; }
+.shots.many::-webkit-scrollbar { height: 6px; }
+.shots.many::-webkit-scrollbar-thumb { background: #d9d5cc; border-radius: 3px; }
+
+/* 出图结果落入：从上方压下来一点，像卡牌落桌 */
+@keyframes dropIn { 0% { opacity: 0; transform: translateY(-12px) scale(0.96); } 70% { opacity: 1; transform: translateY(1px) scale(1.004); } 100% { opacity: 1; transform: none; } }
+.shots figure.drop { animation: dropIn 320ms var(--ease-out) both; }
+
+/* 仓库计数弹一下 */
+@keyframes countBump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+#btnWarehouse.bump .count { animation: countBump 380ms var(--ease-out); display: inline-block; }
+
+/* 撤销条 */
+.toast { position: fixed; left: 50%; bottom: 88px; transform: translate(-50%, 8px); z-index: 60;
+  display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-radius: 999px;
+  background: var(--ink); color: #f5f0e6; font-size: 13px; box-shadow: 0 6px 20px rgba(10, 46, 92, 0.18);
+  opacity: 0; transition: opacity 180ms var(--ease-out), transform 220ms var(--ease-out); pointer-events: none; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.toast .link { color: #f2c14e; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } .shots figure.drop { animation: none; } }
