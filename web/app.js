@@ -1633,7 +1633,29 @@ async function loadMeta() {
 
 /* ---------------- 启动 ---------------- */
 
+const THEME_KEY = 'dukou:theme';
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  const b = $('#btnTheme');
+  if (b) {
+    b.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
+    b.setAttribute('aria-label', t === 'dark' ? '切换到浅色模式' : '切换到深色模式');
+    const ico = b.querySelector('.th-ico');
+    if (ico) ico.textContent = t === 'dark' ? '☀' : '◐';
+  }
+  try { localStorage.setItem(THEME_KEY, t); } catch {}
+}
+function initTheme() {
+  let t = null;
+  try { t = localStorage.getItem(THEME_KEY); } catch {}
+  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  applyTheme(t);
+  $('#btnTheme')?.addEventListener('click', () => {
+    applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+}
 (async function boot() {
+  initTheme();
   renderEndpoints();
   buildPlatformMenu();
   const hash = location.hash.replace('#', '');

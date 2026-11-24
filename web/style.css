@@ -870,7 +870,7 @@ body {
 .pick { border-radius: 0; border: var(--px) solid var(--ink); background: var(--sheet); box-shadow: var(--shadow-sm); }
 .wh-item.picked .pick { background: var(--green); border-color: var(--ink); }
 .wh-bar { background: var(--paper); border-bottom: var(--px) solid var(--ink); }
-.btn-danger { border-radius: 0; border: var(--px) solid var(--ink); background: var(--red); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-danger { border-radius: 0; border: var(--px) solid var(--ink); background: var(--red); color: #fff; box-shadow: none; }
 .pd-search { border-radius: 0; border: var(--px) solid var(--ink); background: var(--sheet); }
 .pd-item { border: 0; border-bottom: 1px dotted var(--rule); background: transparent; box-shadow: none; }
 .pd-item.active, .pd-item:hover { background: var(--yellow); }
@@ -914,9 +914,9 @@ body {
 .msg.ai.fresh .bubble::after,
 .msg.ai.fresh .bubble > :last-child::after { content: none !important; animation: none !important; }
 .btn-primary, #btnSend, .chip.on {
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -3px 0 rgba(11,11,11,0.22), 2px 2px 0 var(--ink);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(11,11,11,0.18);
 }
-.btn-primary:active, #btnSend:active { box-shadow: inset 0 2px 0 rgba(11,11,11,0.16), inset 0 -2px 0 rgba(255,255,255,0.35), 0 0 0 var(--ink); }
+.btn-primary:active, #btnSend:active { box-shadow: inset 0 1px 0 rgba(11,11,11,0.2); transform: translateY(1px); }
 .screen-head h1 { font-size: 18px; }
 .meta { text-transform: none; letter-spacing: 0.04em; }
 /* 第四轮：纸面纹理铺到面板上，小节标题做成等宽标签 */
@@ -960,3 +960,95 @@ body {
 .ask-foot .link { padding-right: 4px; }
 .ask-foot .btn.primary { flex: 0 0 auto; min-width: 132px; text-align: center; }
 .ask-foot .btn.primary { padding-right: 22px; }
+/* =====================================================================
+   第十二轮：降噪 + 深色模式
+   原则：边框降到 1px、去掉面板投影、纹理只留在页面底、tab 不再做分隔线。
+   ===================================================================== */
+:root {
+  --edge: #1d1d1d;
+  --shadow: 2px 2px 0 var(--ink);
+  --shadow-sm: 1px 1px 0 var(--ink);
+}
+body { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='1' height='1' fill='%230b0b0b' fill-opacity='0.04'/%3E%3C/svg%3E"); }
+.sheet, .wh, .pd, .stats, .toast { background-image: none; box-shadow: none; }
+.sheet { border-width: 1px; }
+.msg .bubble { border-width: 1px; box-shadow: none; }
+.msg.user .bubble { border-width: 1px; }
+.tile { border-width: 1px; box-shadow: none; }
+.tile:hover { box-shadow: none; }
+.avatar { box-shadow: none; border-width: 1px; }
+.btn, .btn-products, .btn-warehouse, .market-sel, .select, .chip, .pd-item, .wh-tab { box-shadow: none; border-width: 1px; }
+.btn-primary, #btnSend { box-shadow: inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(11,11,11,0.18); }
+.tab { border-right: 0; background: transparent; }
+.tab.active { background: var(--yellow); }
+.tabs { gap: 4px; padding-left: 6px; }
+.progress .bar { height: 10px; }
+.progress .bar i { background-image: repeating-linear-gradient(90deg, var(--green) 0 6px, var(--sheet) 6px 8px); }
+.wh-item img { box-shadow: none; border-width: 1px; }
+.stats { box-shadow: none; }
+.btn-theme {
+  width: 32px; height: 32px; line-height: 1; padding: 0 0 2px; border: 1px solid var(--edge);
+  background: var(--sheet); color: var(--ink); cursor: pointer; font-size: 15px;
+}
+.btn-theme:hover { background: var(--yellow); color: var(--ink); }
+
+/* 深色 */
+html[data-theme='dark'] {
+  --paper: #121110;
+  --sheet: #1a1917;
+  --ink: #ece5d3;
+  --ink-2: #cfc7b4;
+  --muted: #948d7e;
+  --rule: #35322c;
+  --edge: #4a453c;
+  --yellow: #ffe600;
+  --link: #8ea2ff;
+  --chart: #35c08b;
+  --warn: #ff6b72;
+  --green: #35c08b;
+  --red: #ff6b72;
+  --blue: #8ea2ff;
+}
+html[data-theme='dark'] body {
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='1' height='1' fill='%23ffffff' fill-opacity='0.05'/%3E%3C/svg%3E");
+}
+html[data-theme='dark'] .topbar { background: var(--paper); border-color: var(--edge); }
+html[data-theme='dark'] .brand-mark { background: var(--yellow); color: #0b0b0b; border-color: #0b0b0b; }
+html[data-theme='dark'] .tab.active { background: var(--yellow); color: #0b0b0b; }
+html[data-theme='dark'] .msg.user .bubble { background: var(--yellow); color: #0b0b0b; border-color: #0b0b0b; }
+html[data-theme='dark'] .msg.user .bubble .muted { color: #4a453c !important; }
+html[data-theme='dark'] .avatar { background: var(--sheet); color: var(--ink); border-color: var(--edge); }
+html[data-theme='dark'] .btn-primary, html[data-theme='dark'] #btnSend { color: #0b0b0b; border-color: #0b0b0b; box-shadow: inset 0 2px 0 rgba(255,255,255,0.45), inset 0 -2px 0 rgba(0,0,0,0.25); }
+html[data-theme='dark'] .count { background: var(--ink); color: #0b0b0b; }
+html[data-theme='dark'] .wh-mask, html[data-theme='dark'] .pd-mask { background: rgba(0, 0, 0, 0.5) !important; }
+html[data-theme='dark'] .wh, html[data-theme='dark'] .pd { border-color: var(--edge); }
+html[data-theme='dark'] .toast { border-color: var(--ink); box-shadow: 3px 3px 0 var(--edge); }
+/* 深色下控件边框压暗一档，别用亮奶油描边 */
+html[data-theme='dark'] .btn-products,
+html[data-theme='dark'] .btn-warehouse,
+html[data-theme='dark'] .market-sel,
+html[data-theme='dark'] .select,
+html[data-theme='dark'] .btn-theme,
+html[data-theme='dark'] .chip,
+html[data-theme='dark'] .upload,
+html[data-theme='dark'] .composer #ask,
+html[data-theme='dark'] .pd-search { border-color: var(--edge); }
+html[data-theme='dark'] .composer { border-color: var(--edge); }
+html[data-theme='dark'] .tabs { border-color: var(--edge); }
+html[data-theme='dark'] .wh-head, html[data-theme='dark'] .pd-head { border-color: var(--edge); }
+html[data-theme='dark'] .ask-quote { border-color: var(--edge); }
+/* 第十三轮：主按钮去掉外投影，只留内嵌 bevel（更安静） */
+.btn-primary, #btnSend { box-shadow: inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(11,11,11,0.18); }
+.btn-primary:active, #btnSend:active { box-shadow: inset 0 1px 0 rgba(11,11,11,0.18); transform: translateY(1px); }
+html[data-theme='dark'] .btn-primary, html[data-theme='dark'] #btnSend { box-shadow: inset 0 2px 0 rgba(255,255,255,0.45), inset 0 -2px 0 rgba(0,0,0,0.25); }
+/* 第十四轮：按钮一律无投影（连内嵌 bevel 也去掉），只留边框与底色 */
+button, .btn, .btn-primary, #btnSend, .btn-danger, .tile, .chip, .pd-item, .wh-tab, .btn-theme {
+  box-shadow: none !important;
+}
+/* 第十五轮：AI 消息不再画框（只留头像与正文），用户消息保留黄块 */
+.msg.ai .bubble { border: 0; background: transparent; padding: 2px 0 0; }
+.msg.ai .bubble > p:first-child { margin-top: 0; }
+html[data-theme='dark'] .msg.ai .bubble { background: transparent; }
+/* 深色下一档对比度 */
+html[data-theme='dark'] { --paper: #151410; --sheet: #221f1a; }
