@@ -959,3 +959,4 @@ body {
 .ask-foot { align-items: center; }
 .ask-foot .link { padding-right: 4px; }
 .ask-foot .btn.primary { flex: 0 0 auto; min-width: 132px; text-align: center; }
+.ask-foot .btn.primary { padding-right: 22px; }
