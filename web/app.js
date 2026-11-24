@@ -1,4 +1,4 @@
-﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
+// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -607,6 +607,17 @@ function progressBubble(text, opts = {}) {
   const bar = el.querySelector('.bar i');
   const label = el.querySelector('.progress span');
   const bootEl = el.querySelector('.duk-loader-wrap');
+  const textEl = el.querySelector('p');
+  const originalText = text;
+  let slowTimer = null;
+  if (opts.loader) {
+    const after = Number(opts.slowAfter) || Number(window.__slowAfter) || 90000;
+    slowTimer = setTimeout(() => {
+      if (!el.isConnected || target >= 35) return;
+      textEl.textContent = opts.slowText || '还在排队，没死机。这一步正常要 1–2 分钟，你可以先去别的 tab，出好了会留在这条消息里。';
+      el.classList.add('slow');
+    }, after);
+  }
   // 弹簧步进：显示值追目标值，带一点过冲后落定，别一格一格跳
   let target = 0;
   let cur = 0;
@@ -636,9 +647,21 @@ function progressBubble(text, opts = {}) {
         bootEl.classList.add('done');
         setTimeout(() => bootEl.remove(), 260);
       }
+      // 进度真上来了就把兜底文案收回原句
+      if (target >= 35 && el.classList.contains('slow')) {
+        el.classList.remove('slow');
+        textEl.textContent = originalText;
+      }
+      if (slowTimer && target >= 35) {
+        clearTimeout(slowTimer);
+        slowTimer = null;
+      }
       if (!raf) raf = requestAnimationFrame(frame);
     },
-    done() { el.remove(); },
+    done() {
+      if (slowTimer) clearTimeout(slowTimer);
+      el.remove();
+    },
   };
 }
 

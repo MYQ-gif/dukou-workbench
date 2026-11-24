@@ -735,3 +735,7 @@ h1 { letter-spacing: -0.02em; }
 @media (prefers-reduced-motion: reduce) {
   .duk-loader::before, .duk-loader::after { animation: none; }
 }
+
+/* 排队兜底：进度长时间不动时的提示语气降一档 */
+.msg.ai.slow p { color: var(--muted); }
+.msg.ai.slow .progress { opacity: 0.75; }
