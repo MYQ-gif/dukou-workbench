@@ -1,4 +1,4 @@
-﻿# 接入真模型（30 分钟版）
+# 接入真模型（30 分钟版）
 
 目标：把 `AI_MOCK=1` 换成 `AI_MOCK=0`，三条链路各自接上真模型，且 key 只留在本机。
 
@@ -138,4 +138,21 @@ node scripts/aitest.mjs
 
 一条实例（家居 / Shopee 1242×1660）见 `node scripts/promptcheck.mjs` 的输出。
 
-注：spec 里的类目与光位是中文，Kolors / 通义系能读；换纯英文模型（Flux、SDXL）时建议把 `CATEGORIES` 的 `light/scene/words` 也补一份英文，否则会掉细节。
+注：spec 里的类目与光位是中文，Kolors / 通义系能读；换纯英文模型（Flux、SDXL）时会自动切英文。
+
+## 中英文提示词怎么切
+
+`lib/ai.mjs` 的 `imagePromptLang()` 决定用哪套词：
+
+1. `IMAGE_PROMPT_LANG=en` / `zh` 显式指定（最高优先级）
+2. 否则看 `IMAGE_BASE_URL`：命中 `siliconflow|flux|stability|replicate|fal|openai|together|deepinfra|novita|bfl` → 英文
+3. 没配（mock）或别家 → 中文
+
+英文路径用 `lib/visual.mjs` 的两张表：
+
+- `CATEGORY_EN`：12 个类目的英文打法（`scene` / `light` / `words[3]`），替代中文 `CATEGORIES` 那一行
+- `SPEC_GLOSSARY` + `specEn(spec)`：把视觉规范里的中文词（窗光、柔光、浅景深、留白、俯拍…）换成英文短语，最多取 5 条拼成一行 `Look: …`；没命中的直接丢，不硬翻
+- `promptFor(step, {lang:'en'})`：精修 / 视角 / 主图 / 海报 / 详情段 / 模特这六步模板也有英文版，避免 Flux 收到中文指令
+
+想看两版差异：`node scripts/promptcheck.mjs`（会打印中文版、英文版、四个分步模板的英文版，以及英文版里还剩几个中文字符——只剩商品标题这类必须保留的）。
+
