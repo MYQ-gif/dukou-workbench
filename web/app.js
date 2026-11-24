@@ -1,4 +1,4 @@
-﻿// 前端逻辑 —— 原生 ES Module，无框架、无构建
+// 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -1718,8 +1718,10 @@ async function loadMeta() {
 /* ---------------- 启动 ---------------- */
 
 const THEME_KEY = 'dukou:theme';
-function applyTheme(t) {
+
+function paintTheme(t) {
   document.documentElement.dataset.theme = t;
+  desiredTheme = t;
   const b = $('#btnTheme');
   if (b) {
     b.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
@@ -1729,13 +1731,50 @@ function applyTheme(t) {
   }
   try { localStorage.setItem(THEME_KEY, t); } catch {}
 }
+
+/* 径向揭幕：用 View Transitions 做一圈从按钮扩散的换肤，整页只合成一层，不掉帧 */
+let theming = false;
+let pendingTheme = null;
+let desiredTheme = null;
+function applyTheme(t, origin) {
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (theming) { pendingTheme = { t, origin }; return; }
+  if (!document.startViewTransition || reduce) { paintTheme(t); return; }
+
+  const rect = origin?.getBoundingClientRect?.();
+  const x = rect ? rect.left + rect.width / 2 : innerWidth / 2;
+  const y = rect ? rect.top + rect.height / 2 : innerHeight / 2;
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+  theming = true;
+  root.style.setProperty('--vt-x', x + 'px');
+  root.style.setProperty('--vt-y', y + 'px');
+  root.style.setProperty('--vt-r', radius + 'px');
+  const vt = document.startViewTransition(() => {
+    root.classList.add('vt');
+    paintTheme(t);
+  });
+  vt.finished.finally(() => {
+    theming = false;
+    root.classList.remove('vt');
+    if (pendingTheme) {
+      const next = pendingTheme;
+      pendingTheme = null;
+      applyTheme(next.t, next.origin);
+    }
+  });
+}
+
 function initTheme() {
   let t = null;
   try { t = localStorage.getItem(THEME_KEY); } catch {}
   if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  applyTheme(t);
-  $('#btnTheme')?.addEventListener('click', () => {
-    applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  paintTheme(t);
+  $('#btnTheme')?.addEventListener('click', (ev) => {
+    const cur = desiredTheme || document.documentElement.dataset.theme || 'light';
+    desiredTheme = cur === 'dark' ? 'light' : 'dark';
+    applyTheme(desiredTheme, ev.currentTarget);
   });
 }
 (async function boot() {
