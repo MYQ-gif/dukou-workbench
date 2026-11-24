@@ -1250,3 +1250,79 @@ html[data-theme='dark'] .chip-state.off { color: var(--ink-2); }
 :root { --ok-solid: #0f7a52; }
 html[data-theme='dark'] { --ok-solid: #178a58; }
 .chip-state.on { color: #fff !important; background: var(--ok-solid) !important; border-color: #0b0b0b; }
+
+/* ===== 第十七轮：拉开色相 + 加色块 + 整体放柔 ===== */
+:root {
+  --t1: #fff6c9; --t1-ink: #6a5600;
+  --t2: #e6ecff; --t2-ink: #22377a;
+  --t3: #ddefe3; --t3-ink: #0f5539;
+  --t4: #fbe2cf; --t4-ink: #7a3810;
+  --s1: #e9f6ee; --s2: #fce9ec; --s3: #eaf0ff;
+  --soft-edge: #cfc7b6;
+}
+html[data-theme='dark'] {
+  --t1: #2c2711; --t1-ink: #ffe76b;
+  --t2: #1a2340; --t2-ink: #b2c4ff;
+  --t3: #14291d; --t3-ink: #6fe0a8;
+  --t4: #2c1f13; --t4-ink: #ffb884;
+  --s1: #16271d; --s2: #2b181c; --s3: #18203a;
+  --soft-edge: #4a453c;
+}
+
+/* 入口卡：整块淡色 + 同色系粗边，四张一眼分得开 */
+.tiles .tile { border-left-width: 8px; padding: 12px 14px; }
+.tiles .tile:nth-child(4n + 1) { background: var(--t1); border-left-color: var(--yellow); }
+.tiles .tile:nth-child(4n + 2) { background: var(--t2); border-left-color: var(--info); }
+.tiles .tile:nth-child(4n + 3) { background: var(--t3); border-left-color: var(--ok); }
+.tiles .tile:nth-child(4n + 4) { background: var(--t4); border-left-color: var(--amber); }
+.tiles .tile:nth-child(4n + 1) .tile-t { color: var(--t1-ink); }
+.tiles .tile:nth-child(4n + 2) .tile-t { color: var(--t2-ink); }
+.tiles .tile:nth-child(4n + 3) .tile-t { color: var(--t3-ink); }
+.tiles .tile:nth-child(4n + 4) .tile-t { color: var(--t4-ink); }
+.tiles .tile:hover { filter: brightness(0.98); }
+
+/* 账本三格：淡底 + 顶部色条 */
+.stats .stat:nth-child(1) { background: var(--s1); }
+.stats .stat:nth-child(2) { background: var(--s2); }
+.stats .stat:nth-child(3) { background: var(--s3); }
+.stats .stat-value.cost { color: var(--bad); }
+
+/* 小标题给一块底色，读起来有段落感 */
+.msg.ai .bubble > h3, .sub-h {
+  display: inline-block;
+  padding: 1px 8px;
+  background: var(--t2);
+  color: var(--t2-ink);
+  border-left: 4px solid var(--info);
+}
+
+/* 分组标题：方角色块 */
+.pf-group, .wh-group {
+  margin: 6px 6px 2px;
+  padding: 1px 8px;
+  border-left: 4px solid var(--info);
+  background: var(--t2);
+  color: var(--t2-ink);
+  border-top: 0;
+}
+
+/* 方法名做成小色块 */
+.ep .m {
+  display: inline-block;
+  min-width: 56px;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  font-size: 12px;
+}
+.ep .m.GET { background: var(--t3); }
+.ep .m.POST { background: var(--t2); }
+.ep .m.PATCH { background: var(--t4); }
+.ep .m.DELETE { background: var(--s2); }
+
+/* 边框与分隔线整体放柔一档 */
+.tile, .stats, .providers, .pv + .pv, .ep { border-color: var(--soft-edge); }
+html[data-theme='dark'] .tile, html[data-theme='dark'] .stats { border-color: var(--soft-edge); }
+
+/* 小节标题在 flex 面板里会拉满整行，收缩到内容宽 */
+.panel > .sub-h, .panel > h3 { align-self: flex-start; }
+.sub-h { margin: 2px 0 10px; }
