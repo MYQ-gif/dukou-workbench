@@ -66,7 +66,7 @@ data/             运行时数据（db.json + uploads/），不进 git
   ```
 
   重启后打开「接口」页，顶部会显示每条链路「已接 / 未配置」，点「自检」当场测通断。
-  命令行版：`node scripts/aitest.mjs`（另有 `node scripts/clipcheck.mjs` 测短视频、`node scripts/contentcheck.mjs` 测内容资产与询盘）。逐步说明见 [`docs/接入AI.md`](docs/接入AI.md)。
+  命令行版：`node scripts/aitest.mjs`（另有 `node scripts/clipcheck.mjs` 测短视频、`node scripts/contentcheck.mjs` 测内容资产与询盘、`node scripts/detailcheck.mjs` 测详情页六段）。逐步说明见 [`docs/接入AI.md`](docs/接入AI.md)。
 
   key 只在本机 `.env`，**永不入库、永不进前端、永不贴群**。
 
@@ -80,7 +80,7 @@ data/             运行时数据（db.json + uploads/），不进 git
 | GET | `/api/products/:id` | 商品详情 |
 | PATCH | `/api/products/:id` | 更新商品 |
 | POST | `/api/uploads` | 上传图片（raw body） |
-| POST | `/api/jobs` | 建任务 image/copy/video/clip/visual/geo/inquiry |
+| POST | `/api/jobs` | 建任务 image/copy/video/clip/visual/geo/inquiry/detail |
 | GET | `/api/jobs/:id` | 查进度（前端 1.2s 轮询） |
 | POST | `/api/ledger` | 记一笔 |
 | GET | `/api/ledger` | 账目 + 汇总 |

@@ -259,6 +259,10 @@ function chatReset() {
            <span class="tile-t">翻视频字幕</span>
            <span class="tile-d">保留原声，出目标语言字幕轨</span>
          </button>
+         <button class="tile" type="button" data-fill="出一版详情页，六段齐全">
+           <span class="tile-t">出详情页</span>
+           <span class="tile-d">品牌 → 卖点 → 细节 → 功能 → 场景 → 购买理由</span>
+         </button>
          <button class="tile" type="button" data-fill="这批买家会问什么？顺便把形容词换成数字">
            <span class="tile-t">买家会问什么</span>
            <span class="tile-d">问题库 + 事实锚点 + 六层关键词</span>
@@ -542,6 +546,7 @@ const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
 const CLIP_WORDS = /视频|短片|短视频|运镜|动起来|片头/;
 const IMAGE_ONLY = /主图|详情图|白底图|海报|套图/;
 const GEO_WORDS = /会问什么|买家问题|买家会问|关键词|锚点|内容资产|GEO|AI 可见度|ai 可见度/i;
+const DETAIL_WORDS = /详情页|详情长图|详情图|六段|整页详情/;
 const INQUIRY_WORDS = /询盘|回信|报价|买家来信|客户问|inquiry/i;
 // 一整段带价格/数量/交期口吻的外文，直接当询盘
 const looksLikeInquiry = (t) =>
@@ -846,6 +851,50 @@ async function doGeo(askText) {
   }
 }
 
+/* ---------------- 详情页六段 ---------------- */
+
+async function doDetail(askText) {
+  const inner0 = $('#chat .chat-inner');
+  if (!(await ensureTarget(askText))) {
+    say(inner0, 'ai', '<p>先选一个商品：顶栏下拉里挑一个，再说「出详情页」。</p>');
+    return;
+  }
+  const inner = $('#chat .chat-inner');
+  say(inner, 'user', `<p>${esc(askText || '出详情页')}</p><p class="meta-line">详情页 · 六段 · ${esc(pf(state.platform).name)}</p>`);
+  const box = progressBubble('正在排六段详情页…');
+  try {
+    const { jobId } = await api('/api/jobs', {
+      method: 'POST',
+      body: { type: 'detail', productId: state.current.id, params: { platform: state.platform, lang: $('#imgLang').value } },
+    });
+    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    box.done();
+    state.current = await api(`/api/products/${state.current.id}`);
+    const bySeg = new Map((r.segments || []).map((s) => [s.index, s]));
+    const shots = (r.assets || [])
+      .map((id) => (state.current.assets || []).find((a) => a.id === id))
+      .filter(Boolean)
+      .map((a) => {
+        const seg = bySeg.get(a.meta?.index) || {};
+        return `<figure><img src="${a.url}" alt="" data-open="${a.url}"><figcaption>${a.meta?.index || ''}. ${esc(seg.title || a.meta?.segTitle || '')}</figcaption></figure>`;
+      })
+      .join('');
+    const copies = (r.segments || [])
+      .map((s) => `<li><b>${s.index}. ${esc(s.title)}</b><br><span style="white-space:pre-wrap">${esc(s.copy)}</span></li>`)
+      .join('');
+    say(inner, 'ai', `
+      <p>六段出好了${r.errors?.length ? `（${r.errors.length} 段失败）` : ''}，文案在下面，图在仓库。</p>
+      <div class="shots">${shots}</div>
+      <h3>每段文案</h3><ul>${copies}</ul>
+      <p class="muted-sm">${esc(r.note || '')}</p>`);
+    refreshMeta();
+    renderWarehouse();
+  } catch (e) {
+    box.done();
+    say(inner, 'ai', `<p style="color:#f27e4c">出详情页失败：${esc(e.message)}</p>`);
+  }
+}
+
 /* ---------------- 询盘解析 ---------------- */
 
 async function doInquiry(rawText) {
@@ -1022,6 +1071,11 @@ $('#btnSend').onclick = async () => {
   // 「这批买家会问什么」「做关键词」→ GEO 内容资产
   if (GEO_WORDS.test(ask)) {
     doGeo(ask);
+    return;
+  }
+  // 详情页：一次出六段
+  if (DETAIL_WORDS.test(ask) && !/视频|短片/.test(ask)) {
+    doDetail(ask);
     return;
   }
   // 先认「视频」：一句话里提到短片/运镜，就走 Seedance 出片
