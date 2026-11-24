@@ -1065,3 +1065,57 @@ html[data-theme='dark'] .menu-scroll::-webkit-scrollbar-thumb { background: var(
 .composer, .composer-row, .pf-wrap { overflow: visible; }
 .pf-menu { z-index: 70; bottom: calc(100% + 8px); }
 .menu-scroll { max-height: min(320px, 46vh); }
+/* ===== 动效重做：像素节奏（一律 steps，去掉缓动与回弹） ===== */
+:root {
+  --ease-out: steps(3, end);
+  --ease-in-out: steps(2, end);
+  --ease-drawer: steps(4, end);
+  --t-press: 60ms;
+  --t-state: 90ms;
+}
+
+/* 文字揭示：按 4 段硬擦出，不做淡入 */
+@keyframes lineIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+.msg.ai.fresh .bubble > * { animation: lineIn 260ms steps(4, end) both; }
+
+/* 抽屉：从顶部按 4 阶落下，不做圆形扩散 */
+.pd:not(.hidden) { animation: pdGrow 220ms steps(4, end) both; clip-path: inset(0); }
+@keyframes pdGrow { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+
+/* 仓库：入场硬落位、勾选方块刻度、删除像素溶解 */
+.wh-item { animation: cardIn 160ms steps(2, end) both; animation-delay: calc(min(var(--i, 1), 12) * 40ms); }
+@keyframes cardIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes tickIn { from { transform: rotate(45deg) scale(0); } to { transform: rotate(45deg) scale(1); } }
+@keyframes pickNudge { 0% { transform: none; } 50% { transform: translate(1px, 1px); } 100% { transform: none; } }
+@keyframes curveOut { 0% { opacity: 1; clip-path: inset(0); } 65% { opacity: 1; clip-path: inset(0 0 60% 0); } 100% { opacity: 0; clip-path: inset(0 0 100% 0); } }
+.wh-item.removing { animation: curveOut 200ms steps(3, end) forwards; }
+
+/* 波纹：方形脉冲，不画圆 */
+.ripple { border-radius: 0 !important; animation: rippleOut 300ms steps(3, end) forwards; }
+@keyframes rippleOut { from { transform: scale(0.15); opacity: 0.35; } to { transform: scale(1); opacity: 0; } }
+
+/* 出图落袋：两阶硬落，不回弹 */
+@keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.shots figure.drop { animation: dropIn 160ms steps(2, end) both; }
+@keyframes countBump { 0% { transform: none; } 50% { transform: translateY(-2px); } 100% { transform: none; } }
+#btnWarehouse.bump .count { animation: countBump 200ms steps(2, end); }
+
+/* 按压：像素位移，不用缩放 */
+.btn:active, .tile:active, .pf-item:active, .tab:active, .btn-products:active { transform: translate(1px, 1px); }
+
+/* 悬停即时换色（保留 90ms 步进，避免糊） */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover, .pf-item:hover, .tile:hover { transition-duration: 90ms; transition-timing-function: steps(1, end); }
+}
+
+/* 搜索框与分组 */
+.pf-search { width: calc(100% - 12px); margin: 6px; padding: 6px 8px; border: 1px solid var(--edge); background: var(--sheet); color: var(--ink); font: inherit; font-size: 14px; outline: none; }
+.pf-search:focus-visible { border-color: var(--ink); outline: 2px solid var(--ink); outline-offset: -3px; }
+.pf-group { padding: 8px 10px 4px; font-size: 12px; letter-spacing: 0.08em; color: var(--muted); border-top: 1px dashed var(--edge); }
+.pf-items .pf-group:first-child { border-top: 0; padding-top: 4px; }
+.pf-empty { padding: 14px 10px; color: var(--muted); font-size: 14px; }
+
+/* 减速动：全部停掉 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}

@@ -180,7 +180,11 @@ function toggleMenu(menuSel, btnSel) {
   if (!m || !b) return;
   const willOpen = m.classList.contains('hidden');
   closeMenus();
-  if (willOpen) { m.classList.remove('hidden'); b.setAttribute('aria-expanded', 'true'); }
+  if (willOpen) {
+    m.classList.remove('hidden'); b.setAttribute('aria-expanded', 'true');
+    const box = m.querySelector('.pf-search');
+    if (box) { box.value = ''; if (menuSel === '#mkMenu') fillMarkets(state.markets || []); else buildLangMenu(); }
+  }
 }
 
 /* 目标语言：出图文案与 listing 文案用哪种语言写 */
@@ -197,10 +201,26 @@ function setLang(id) {
   const name = $('#lgName'); if (name) name.textContent = langName(next);
   $$('#lgItems .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.lg === next));
 }
+function wireMenuSearch() {
+  const pairs = [['#lgSearch', buildLangMenu], ['#mkSearch', () => fillMarkets(state.markets || [])]];
+  for (const [sel, rerender] of pairs) {
+    const el = $(sel);
+    if (!el || el.dataset.wired) continue;
+    el.dataset.wired = '1';
+    el.addEventListener('input', () => rerender());
+  }
+}
+
 function buildLangMenu() {
   const box = $('#lgItems'); if (!box) return;
-  box.innerHTML = LANGS.map((l) => '<button class="pf-item" type="button" role="option" data-lg="' + l[0] + '"><span>' + l[1] + '</span><span class="pf-dim">' + l[0].toUpperCase() + '</span></button>').join('');
+  const q = ($('#lgSearch')?.value || '').trim().toLowerCase();
+  const hit = LANGS.filter((l) => !q || l[1].includes(q) || l[0].includes(q));
+  box.innerHTML = hit.length
+    ? hit.map((l) => '<button class="pf-item" type="button" role="option" data-lg="' + l[0] + '"><span>' + l[1] + '</span><span class="pf-dim">' + l[0].toUpperCase() + '</span></button>').join('')
+    : '<p class="pf-empty">没有匹配的语言</p>';
   $$('#lgItems .pf-item').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lg); closeMenus(); }));
+  const cur = state.lang || 'en';
+  $$('#lgItems .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.lg === cur));
 }
 
 /* 目标市场：决定提示词里的文化适配（不是翻译，是改写） */
@@ -220,12 +240,34 @@ function setMarket(id, remember = true) {
   }
 }
 
+/* 市场按大区分组：先列常用的，再列整表 */
+const MARKET_GROUPS = [
+  ['常见', ['cn', 'hk', 'mo', 'tw', 'sg', 'my', 'th', 'vn', 'id', 'ph', 'jp', 'kr', 'in']],
+  ['北美 / 拉美', ['us', 'ca', 'mx', 'br', 'cl', 'arg', 'co']],
+  ['欧洲', ['uk', 'de', 'fr', 'it', 'es', 'nl', 'pl', 'se', 'ru']],
+  ['中东 / 非洲', ['ae', 'sa', 'il', 'tr', 'eg', 'za', 'ng', 'ke']],
+  ['大洋洲', ['au', 'nz']],
+];
+function marketGroupOf(id) {
+  const hit = MARKET_GROUPS.find(([, ids]) => ids.includes(id));
+  return hit ? hit[0] : '其他';
+}
+
 function fillMarkets(list) {
   if (!Array.isArray(list) || !list.length) return;
   state.markets = list;
   const box = $('#mkItems');
   if (box) {
-    box.innerHTML = list.map((m) => '<button class="pf-item" type="button" role="option" data-mk="' + m.id + '"><span>' + m.label + '</span><span class="pf-dim">' + (m.lang || '').toUpperCase() + '</span></button>').join('');
+    const q = ($('#mkSearch')?.value || '').trim().toLowerCase();
+    const hit = list.filter((m) => !q || m.label.includes(q) || m.id.includes(q) || (m.lang || '').includes(q));
+    const order = MARKET_GROUPS.map((g) => g[0]).concat(['其他']);
+    const groups = new Map(order.map((g) => [g, []]));
+    for (const m of hit) groups.get(marketGroupOf(m.id)).push(m);
+    box.innerHTML = hit.length
+      ? [...groups.entries()].filter(([, arr]) => arr.length)
+        .map(([g, arr]) => '<div class="pf-group">' + g + '</div>' + arr.map((m) =>
+          '<button class="pf-item" type="button" role="option" data-mk="' + m.id + '"><span>' + m.label + '</span><span class="pf-dim">' + (m.lang || '').toUpperCase() + '</span></button>').join('')).join('')
+      : '<p class="pf-empty">没有匹配的市场</p>';
     $$('#mkItems .pf-item').forEach((b) => b.addEventListener('click', () => { setMarket(b.dataset.mk); closeMenus(); }));
   }
   const cur = state.market || 'us';
@@ -667,20 +709,14 @@ function progressBubble(text, opts = {}) {
   let raf = null;
   let tag = '';
   const frame = () => {
-    const k = 0.16;
-    const damp = 0.72;
-    vel = (vel + (target - cur) * k) * damp;
-    cur += vel;
-    if (Math.abs(target - cur) < 0.25 && Math.abs(vel) < 0.05) {
-      cur = target;
-      vel = 0;
-      raf = null;
-    } else {
-      raf = requestAnimationFrame(frame);
-    }
-    bar.style.width = `${cur}%`;
-    label.textContent = `${Math.round(cur)}%${tag ? ' · ' + tag : ''}`;
+    // 像素节奏：按固定档位一格一格跳，不做弹簧缓动
+    cur = target > cur ? Math.min(target, cur + 3) : target;
+    if (bar) bar.style.width = cur + '%';
+    if (label) label.textContent = Math.round(cur) + '%' + (tag ? ' · ' + tag : '');
+    if (cur < target) raf = requestAnimationFrame(frame);
+    else raf = null;
   };
+
   return {
     update(pct, note) {
       target = Math.max(0, Math.min(100, Number(pct) || 0));
@@ -1550,6 +1586,7 @@ document.addEventListener('click', (ev) => {
   if (!ev.target.closest('.pf-wrap')) $('#pfMenu').classList.add('hidden');
 });
 buildLangMenu();
+wireMenuSearch();
 setLang(state.lang || 'en');
 $('#btnLang')?.addEventListener('click', (ev) => { ev.stopPropagation(); toggleMenu('#lgMenu', '#btnLang'); });
 $('#btnMarket')?.addEventListener('click', (ev) => { ev.stopPropagation(); toggleMenu('#mkMenu', '#btnMarket'); });
