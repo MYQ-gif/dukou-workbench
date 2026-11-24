@@ -76,7 +76,8 @@ function assetTally(p) {
 function refreshMeta() {
   const p = state.current;
   if (!p) return;
-  const mk = $('#marketSel')?.selectedOptions[0]?.textContent || '';
+  const mkHit = (state.markets || []).find((m) => m.id === (state.market || 'us'));
+  const mk = mkHit ? mkHit.label : '';
   $('#pMeta').textContent = [pf(p.platform).name, mk, (p.targetLangs || []).join(' / '), assetTally(p)].filter(Boolean).join(' · ');
 }
 
@@ -167,15 +168,52 @@ function setPlatform(id, remember = true) {
   }
 }
 
+/* 下拉菜单：同一时间只开一个，点外面关掉 */
+function closeMenus() {
+  ['#lgMenu', '#mkMenu', '#pfMenu'].forEach((sel) => {
+    const m = $(sel); if (m) m.classList.add('hidden');
+  });
+  $$('.pf-btn').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+}
+function toggleMenu(menuSel, btnSel) {
+  const m = $(menuSel), b = $(btnSel);
+  if (!m || !b) return;
+  const willOpen = m.classList.contains('hidden');
+  closeMenus();
+  if (willOpen) { m.classList.remove('hidden'); b.setAttribute('aria-expanded', 'true'); }
+}
+
+/* 目标语言：出图文案与 listing 文案用哪种语言写 */
+const LANGS = [
+  ['en','英语'],['es','西班牙语'],['pt','葡萄牙语'],['fr','法语'],['de','德语'],['it','意大利语'],
+  ['nl','荷兰语'],['pl','波兰语'],['sv','瑞典语'],['tr','土耳其语'],['ru','俄语'],['ar','阿拉伯语'],
+  ['he','希伯来语'],['ja','日语'],['ko','韩语'],['th','泰语'],['vi','越南语'],['id','印尼语'],
+  ['ms','马来语'],['zh','中文'],
+];
+function langName(id) { const hit = LANGS.find((l) => l[0] === id); return hit ? hit[1] : LANGS[0][1]; }
+function setLang(id) {
+  const next = LANGS.some((l) => l[0] === id) ? id : 'en';
+  state.lang = next;
+  const name = $('#lgName'); if (name) name.textContent = langName(next);
+  $$('#lgItems .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.lg === next));
+}
+function buildLangMenu() {
+  const box = $('#lgItems'); if (!box) return;
+  box.innerHTML = LANGS.map((l) => '<button class="pf-item" type="button" role="option" data-lg="' + l[0] + '"><span>' + l[1] + '</span><span class="pf-dim">' + l[0].toUpperCase() + '</span></button>').join('');
+  $$('#lgItems .pf-item').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lg); closeMenus(); }));
+}
+
 /* 目标市场：决定提示词里的文化适配（不是翻译，是改写） */
 const DEFAULT_MARKET = { taobao: 'cn', xianyu: 'cn', jd: 'cn', shopee: 'sg', lazada: 'sg', tiktok: 'sg', amazon: 'us', ebay: 'us' };
 
 function setMarket(id, remember = true) {
-  const sel = $('#marketSel');
-  if (!sel) return;
-  const next = id && [...sel.options].some((o) => o.value === id) ? id : sel.value || 'us';
+  const known = Array.isArray(state.markets) && state.markets.some((m) => m.id === id);
+  const next = known ? id : state.market || 'us';
   state.market = next;
-  sel.value = next;
+  const hit = (state.markets || []).find((m) => m.id === next);
+  const mkName = $('#mkName');
+  if (mkName) mkName.textContent = hit ? hit.label : '目标市场';
+  $$('#mkItems .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.mk === next));
   if (remember && state.current && (state.current.market || 'us') !== next) {
     api(`/api/products/${state.current.id}`, { method: 'PATCH', body: { market: next } }).catch(() => {});
     state.current.market = next;
@@ -183,10 +221,14 @@ function setMarket(id, remember = true) {
 }
 
 function fillMarkets(list) {
-  const sel = $('#marketSel');
-  if (!sel || !Array.isArray(list) || !list.length) return;
-  const cur = state.market || sel.value || 'us';
-  sel.innerHTML = list.map((m) => `<option value="${m.id}">${m.label}</option>`).join('');
+  if (!Array.isArray(list) || !list.length) return;
+  state.markets = list;
+  const box = $('#mkItems');
+  if (box) {
+    box.innerHTML = list.map((m) => '<button class="pf-item" type="button" role="option" data-mk="' + m.id + '"><span>' + m.label + '</span><span class="pf-dim">' + (m.lang || '').toUpperCase() + '</span></button>').join('');
+    $$('#mkItems .pf-item').forEach((b) => b.addEventListener('click', () => { setMarket(b.dataset.mk); closeMenus(); }));
+  }
+  const cur = state.market || 'us';
   setMarket(cur, false);
 }
 
@@ -1013,7 +1055,7 @@ async function doImage(askText, opts) {
   const inner = $('#chat .chat-inner');
   const before = new Set((state.current.assets || []).map((a) => a.id));
   const tpl = opts?.template || $('#template').value;
-  const lang = $('#imgLang').value;
+  const lang = state.lang || 'en';
   const platformId = state.platform;
   const count = opts?.count || (tpl === 'detail' ? 3 : 2);
   const width = opts?.width || null;
@@ -1100,7 +1142,7 @@ async function doCopy() {
   say(inner, 'user', `<p>只要文案 · ${esc(pf(state.platform).name)}</p>`);
   const box = progressBubble('正在写文案…');
   try {
-    const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'copy', productId: state.current.id, params: { lang: $('#imgLang').value, platform: state.platform } } });
+    const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'copy', productId: state.current.id, params: { lang: state.lang || 'en', platform: state.platform } } });
     const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
     say(inner, 'ai', `
@@ -1156,7 +1198,7 @@ async function doGeo(askText) {
       body: {
         type: 'geo',
         productId: state.current.id,
-        params: { platform: state.platform, lang: $('#imgLang').value, brief: state.current.brief || {} },
+        params: { platform: state.platform, lang: state.lang || 'en', brief: state.current.brief || {} },
       },
     });
     const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
@@ -1192,7 +1234,7 @@ async function doDetail(askText) {
   try {
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
-      body: { type: 'detail', productId: state.current.id, params: { platform: state.platform, lang: $('#imgLang').value } },
+      body: { type: 'detail', productId: state.current.id, params: { platform: state.platform, lang: state.lang || 'en' } },
     });
     const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
@@ -1507,7 +1549,12 @@ $('#pfMenu').addEventListener('click', (ev) => {
 document.addEventListener('click', (ev) => {
   if (!ev.target.closest('.pf-wrap')) $('#pfMenu').classList.add('hidden');
 });
-$('#marketSel').addEventListener('change', (ev) => setMarket(ev.target.value));
+buildLangMenu();
+setLang(state.lang || 'en');
+$('#btnLang')?.addEventListener('click', (ev) => { ev.stopPropagation(); toggleMenu('#lgMenu', '#btnLang'); });
+$('#btnMarket')?.addEventListener('click', (ev) => { ev.stopPropagation(); toggleMenu('#mkMenu', '#btnMarket'); });
+document.addEventListener('click', () => closeMenus());
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeMenus(); });
 
 /* 商品抽屉 */
 $('#btnProducts').onclick = () => pdOpen($('#pd').classList.contains('hidden'));

@@ -1,0 +1,25 @@
+﻿import fs from 'node:fs';
+const CDP='http://127.0.0.1:9334';
+let list=[];
+try { list = await (await fetch(`${CDP}/json/list`)).json(); } catch { console.log('no cdp'); process.exit(0); }
+const page=list.find(t=>t.type==='page'&&/8787/.test(t.url));
+const ws=new WebSocket(page.webSocketDebuggerUrl);
+await new Promise(r=>ws.onopen=r);
+let id=0;const pending=new Map();
+ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id&&pending.has(m.id)){pending.get(m.id)(m);pending.delete(m.id);}};
+const send=(method,params={})=>new Promise(res=>{const i=++id;pending.set(i,res);ws.send(JSON.stringify({id:i,method,params}));});
+const ev=async x=>(await send('Runtime.evaluate',{expression:x,awaitPromise:true,returnByValue:true})).result?.result?.value;
+await send('Page.navigate',{url:'http://localhost:8787/'});
+await new Promise(r=>setTimeout(r,2600));
+await ev(`document.querySelector('#btnMarket').click(); true`);
+await new Promise(r=>setTimeout(r,500));
+console.log('market items', await ev(`document.querySelectorAll('#mkItems .pf-item').length`));
+console.log('scroll', await ev(`(() => { const b = document.querySelector('#mkItems'); return JSON.stringify({sh:b.scrollHeight, ch:b.clientHeight, scrollable: b.scrollHeight > b.clientHeight}); })()`));
+const shot=await send('Page.captureScreenshot',{format:'png'});
+fs.writeFileSync('docs/preview-market-menu.png',Buffer.from(shot.result.data,'base64'));
+await ev(`document.querySelector('#btnLang').click(); true`);
+await new Promise(r=>setTimeout(r,400));
+console.log('lang items', await ev(`document.querySelectorAll('#lgItems .pf-item').length`));
+const shot2=await send('Page.captureScreenshot',{format:'png'});
+fs.writeFileSync('docs/preview-lang-menu.png',Buffer.from(shot2.result.data,'base64'));
+ws.close();

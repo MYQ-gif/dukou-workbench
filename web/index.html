@@ -75,14 +75,24 @@
           <option value="marketing">营销图</option>
           <option value="detail">详情页</option>
         </select>
-        <select id="imgLang" class="ctl" aria-label="语言">
-          <option value="en">英语</option>
-          <option value="th">泰语</option>
-          <option value="vi">越南语</option>
-        </select>
-        <select id="marketSel" class="ctl" aria-label="目标市场">
-          <option value="us">美国</option>
-        </select>
+        <div class="pf-wrap">
+          <button id="btnLang" class="ctl pf-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <span id="lgName">英语</span>
+            <span class="caret">▾</span>
+          </button>
+          <div id="lgMenu" class="pf-menu hidden">
+            <div id="lgItems" class="pf-items menu-scroll"></div>
+          </div>
+        </div>
+        <div class="pf-wrap">
+          <button id="btnMarket" class="ctl pf-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <span id="mkName">美国</span>
+            <span class="caret">▾</span>
+          </button>
+          <div id="mkMenu" class="pf-menu hidden">
+            <div id="mkItems" class="pf-items menu-scroll"></div>
+          </div>
+        </div>
         <input id="ask" class="ctl grow" placeholder="说说要什么，比如：白底主图，标题写 SIT DOWN. STAY A WHILE.">
         <button id="btnSend" class="btn-primary" type="button">发送</button>
       </div>
