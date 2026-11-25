@@ -1,4 +1,4 @@
-# 渡口 · 出海工作台（黑客松 S3 参赛作品）
+﻿# 渡口 · 出海工作台（黑客松 S3 参赛作品）
 
 一个人做跨境电商的辅助工作台：**拍一张图 → 出套图 → 出文案 → 上架 → 记账**。
 
@@ -42,7 +42,7 @@ node scripts/seed-demo.mjs
 ## 队友怎么跑
 
 ```bash
-git clone <本仓库地址>
+git clone https://github.com/MYQ-gif/dukou-workbench.git
 cd dukou-workbench
 cp .env.example .env      # Windows: copy .env.example .env
 node server.mjs           # 没有 npm install
