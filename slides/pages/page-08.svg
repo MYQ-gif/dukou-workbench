@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <text x="56" y="64" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#6B6558">07 / 路线</text>
+  <text x="56" y="126" font-family="Microsoft YaHei, Arial, sans-serif" font-size="36" font-weight="700" fill="#0B0B0B">下一步做什么</text>
+  <text x="56" y="158" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#6B6558">先把「一个人」这条链路做穿，再加团队与平台能力</text>
+
+  <rect x="56" y="196" width="272" height="286" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <rect x="56" y="196" width="272" height="8" fill="#10825A"/>
+  <text x="80" y="240" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#10825A">已经能用</text>
+  <text x="80" y="276" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 一张图出套图与详情</text>
+  <text x="80" y="304" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 询盘解析与多语回信</text>
+  <text x="80" y="332" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 买家问题库与关键词</text>
+  <text x="80" y="360" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 多平台尺寸与文化适配</text>
+  <text x="80" y="388" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 记账与利润三格</text>
+
+  <rect x="344" y="196" width="272" height="286" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <rect x="344" y="196" width="272" height="8" fill="#2A58FF"/>
+  <text x="368" y="240" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#2A58FF">下个月</text>
+  <text x="368" y="276" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 一键上架（CSV / 平台 API）</text>
+  <text x="368" y="304" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 视频配音（保留原声）</text>
+  <text x="368" y="332" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 利润看板与成本模板</text>
+  <text x="368" y="360" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 合规与认证提醒</text>
+  <text x="368" y="388" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">· 批量商品（一次十个 SKU）</text>
+
+  <rect x="632" y="196" width="272" height="286" fill="#0B0B0B"/>
+  <rect x="632" y="196" width="272" height="8" fill="#FFE600"/>
+  <text x="656" y="240" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFE600">之后</text>
+  <text x="656" y="276" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#F4EFE2">· 团队协作与审稿</text>
+  <text x="656" y="304" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#F4EFE2">· 店铺数据回流（看哪张图能卖）</text>
+  <text x="656" y="332" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#F4EFE2">· 选品参考与竞品拆解</text>
+  <text x="656" y="360" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#F4EFE2">· 多店铺、多币种账</text>
+  <text x="656" y="388" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#F4EFE2">· 面向代运营的席位版</text>
+
+  <text x="56" y="516" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">取舍原则：只做「一个人今天就要用」的功能，团队功能等有第二个用户再说</text>
+</svg>

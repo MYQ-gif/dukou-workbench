@@ -176,6 +176,7 @@ const server = http.createServer(async (req, res) => {
         version: VERSION,
         counts: { products: db.products.length, assets: db.assets.length, jobs: db.jobs.length },
         providers: providerStatus(),
+        mockCaps: String(process.env.MOCK_CAPS || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean),
         markets: visual.MARKETS.map((m) => ({ id: m.id, label: m.label, lang: m.lang })),
       });
     }

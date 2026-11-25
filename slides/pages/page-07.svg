@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <text x="56" y="64" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#6B6558">06 / 现状</text>
+  <text x="56" y="126" font-family="Microsoft YaHei, Arial, sans-serif" font-size="36" font-weight="700" fill="#0B0B0B">今天已经能跑这些</text>
+
+  <rect x="56" y="166" width="200" height="140" fill="#FFE600" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="76" y="246" font-family="Microsoft YaHei, Arial, sans-serif" font-size="52" font-weight="700" fill="#0B0B0B">8 张</text>
+  <text x="76" y="278" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">丢一张图出的一整套</text>
+
+  <rect x="272" y="166" width="200" height="140" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="292" y="246" font-family="Microsoft YaHei, Arial, sans-serif" font-size="52" font-weight="700" fill="#0B0B0B">6 段</text>
+  <text x="292" y="278" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">详情页图 + 文案一次出</text>
+
+  <rect x="488" y="166" width="200" height="140" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="508" y="246" font-family="Microsoft YaHei, Arial, sans-serif" font-size="52" font-weight="700" fill="#0B0B0B">39 个</text>
+  <text x="508" y="278" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">市场模板 + 20 种语言</text>
+
+  <rect x="704" y="166" width="200" height="140" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="724" y="246" font-family="Microsoft YaHei, Arial, sans-serif" font-size="52" font-weight="700" fill="#0B0B0B">0 依赖</text>
+  <text x="724" y="278" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">Node 原生，克隆即可跑</text>
+
+  <rect x="56" y="336" width="400" height="152" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="76" y="368" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" font-weight="700" fill="#0B0B0B">套图与详情</text>
+  <text x="76" y="394" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">精修、三视图、主图、海报、六段详情</text>
+  <text x="76" y="426" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" font-weight="700" fill="#0B0B0B">内容资产</text>
+  <text x="76" y="452" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">买家问题库、事实锚点、六层关键词</text>
+
+  <rect x="476" y="336" width="428" height="152" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="496" y="368" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" font-weight="700" fill="#0B0B0B">询盘与生意</text>
+  <text x="496" y="394" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">抽要素、标风险、楼梯价、四语回信</text>
+  <text x="496" y="426" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" font-weight="700" fill="#0B0B0B">还有</text>
+  <text x="496" y="452" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">记账、仓库拖拽排序、批量删除撤销、深浅色</text>
+</svg>

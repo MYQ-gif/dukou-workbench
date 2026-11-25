@@ -1126,11 +1126,13 @@ async function doImage(askText, opts) {
   const outH = Math.round((height || base.h) * scale);
 
   const thumb = state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : '';
-  say(
-    inner,
-    'user',
-    `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p class="meta-line">${esc(base.name)} · ${tplLabel(tpl)} · ${langLabel(lang)} · ${count} 张 · ${outW}×${outH} · ${quality.toUpperCase()}</p>`
-  );
+  if (!opts?.silent) {
+    say(
+      inner,
+      'user',
+      `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p class="meta-line">${esc(base.name)} · ${tplLabel(tpl)} · ${langLabel(lang)} · ${count} 张 · ${outW}×${outH} · ${quality.toUpperCase()}</p>`
+    );
+  }
 
   const box = progressBubble('正在出图…');
   try {
@@ -1464,6 +1466,28 @@ $('#tabs').addEventListener('click', (ev) => {
 
 $('#prodSel').addEventListener('change', (ev) => { if (ev.target.value) selectProduct(ev.target.value); });
 
+// 上传后的一键流程：后台备料 → 主图 → （假生成时）详情六段
+async function runAutoFlow() {
+  if (!state.current) return;
+  const inner = $('#chat .chat-inner');
+  const n = (state.uploads || []).length || 1;
+  say(
+    inner,
+    'user',
+    `${state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : ''}<p class="meta-line">${n} 张图 · 一键出套图 · ${esc(pf(state.platform).name)}</p>`
+  );
+  if (!whAssets().base.length) await runPrepare(null, { silent: true });
+  await doImage('', { template: 'main', count: 2, quality: '2k', silent: true });
+  let meta = null;
+  try { meta = await api('/api/meta'); } catch { /* 拿不到就按真模型处理 */ }
+  const imageMocked = !meta || meta.providers?.mode === 'mock' || (meta.mockCaps || []).includes('IMAGE');
+  if (imageMocked) {
+    await doDetail('出详情页');
+  } else {
+    say(inner, 'ai', '<p class="muted-sm">主图出好了。要六段详情页说一句「出详情页」，我先省你的额度。</p>');
+  }
+}
+
 $('#file').onchange = async (ev) => {
   const files = [...(ev.target.files || [])].slice(0, 6);
   if (!files.length) return;
@@ -1483,11 +1507,13 @@ $('#file').onchange = async (ev) => {
     $('#attachInfo').textContent = state.uploads.length > 1
       ? `已附 ${state.uploads.length} 张：${state.uploads.map((u) => u.name).join('、')}`
       : `已附：${last.name}（${(last.size / 1024).toFixed(0)}KB）`;
-    // 第一次拿到图：后台备料（不展示精修过程），同时不挡着出图
+    // 第一次拿到图：后台备料（不展示精修过程），然后直接出一套——演示时不用再说话
     const p = state.current;
     if (p && !p.brief?.askedAt) {
-      const brief = await askBrief({ title: p.title, thumb: state.lastUploadPreview });
-      runPrepare(brief, { silent: true });
+      api(`/api/products/${p.id}`, { method: 'PATCH', body: { brief: { askedAt: new Date().toISOString() } } }).catch(() => {});
+    }
+    if (!p || !whAssets().base.length || true) {
+      runAutoFlow();
     }
   } catch (e) {
     alert(e.message);

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <text x="56" y="64" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#6B6558">01 / 问题</text>
+  <text x="56" y="132" font-family="Microsoft YaHei, Arial, sans-serif" font-size="38" font-weight="700" fill="#0B0B0B">一个人做跨境，最缺的不是货</text>
+  <text x="56" y="166" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6B6558">是没有团队：一次上新，等于四个岗位同时开工</text>
+
+  <rect x="56" y="206" width="600" height="1" fill="#0B0B0B"/>
+  <rect x="56" y="230" width="8" height="8" fill="#FFE600"/>
+  <text x="80" y="242" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">美工</text>
+  <text x="170" y="242" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6B6558">一张主图 80 元起，改一版等一天</text>
+  <rect x="56" y="276" width="600" height="1" fill="#CFC7B6"/>
+  <rect x="56" y="300" width="8" height="8" fill="#FFE600"/>
+  <text x="80" y="312" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">翻译</text>
+  <text x="170" y="312" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6B6558">四种语言四条文案，专业词还得自己校</text>
+  <rect x="56" y="346" width="600" height="1" fill="#CFC7B6"/>
+  <rect x="56" y="370" width="8" height="8" fill="#FFE600"/>
+  <text x="80" y="382" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">运营</text>
+  <text x="170" y="382" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6B6558">买家会问什么，全靠猜；问到了又来不及回</text>
+  <rect x="56" y="416" width="600" height="1" fill="#CFC7B6"/>
+  <rect x="56" y="440" width="8" height="8" fill="#FFE600"/>
+  <text x="80" y="452" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">会计</text>
+  <text x="170" y="452" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6B6558">一个月二十单，运费广告摊完，利润算不清</text>
+
+  <rect x="700" y="206" width="204" height="246" fill="#FFE600" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="720" y="272" font-family="Microsoft YaHei, Arial, sans-serif" font-size="56" font-weight="700" fill="#0B0B0B">1 人</text>
+  <text x="720" y="318" font-family="Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#0B0B0B">= 4 个岗位</text>
+  <text x="720" y="360" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">这是个人卖家每天</text>
+  <text x="720" y="382" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">要补上的缺口</text>
+</svg>

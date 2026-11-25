@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <text x="56" y="64" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#6B6558">08 / 底座</text>
+  <text x="56" y="126" font-family="Microsoft YaHei, Arial, sans-serif" font-size="36" font-weight="700" fill="#0B0B0B">为什么敢在两天内做出来</text>
+
+  <rect x="56" y="176" width="404" height="112" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="76" y="212" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#0B0B0B">零依赖</text>
+  <text x="76" y="240" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">Node 原生 http，没有框架和构建链</text>
+  <text x="76" y="264" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">队友 clone 下来 node server.mjs 就跑</text>
+
+  <rect x="476" y="176" width="428" height="112" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="496" y="212" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#0B0B0B">契约先行</text>
+  <text x="496" y="240" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">CONTRACT.md v1.4：10 个接口 + 资产模型</text>
+  <text x="496" y="264" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">三个 AI 写代码前先读同一份契约</text>
+
+  <rect x="56" y="304" width="404" height="112" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="76" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#0B0B0B">四条链路独立配</text>
+  <text x="76" y="368" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">分开的 key 与模型，坏一条不影响别的</text>
+  <text x="76" y="392" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">接口页可以直接点「自检」看通不通</text>
+
+  <rect x="476" y="304" width="428" height="112" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="496" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#0B0B0B">假/真一键切</text>
+  <text x="496" y="368" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">本地合成当占位，秒级出图不花额度</text>
+  <text x="496" y="392" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">改一个环境变量就切真模型，答辩不怕没网</text>
+
+  <rect x="56" y="440" width="848" height="52" fill="#0B0B0B"/>
+  <text x="72" y="472" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#FFE600">CODE</text>
+  <text x="132" y="472" font-family="Arial, sans-serif" font-size="14" fill="#F4EFE2">github.com/MYQ-gif/dukou-workbench　·　MIT</text>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <text x="56" y="64" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#6B6558">03 / 产品</text>
+  <text x="56" y="128" font-family="Microsoft YaHei, Arial, sans-serif" font-size="36" font-weight="700" fill="#0B0B0B">四个入口，一个对话框</text>
+
+  <rect x="56" y="152" width="540" height="287" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <image x="58" y="154" width="536" height="283" href="C:/Users/20708/Documents/deepseek-harness/default-workspace/dukou-workbench/slides/materials/chat.png"/>
+  <text x="56" y="472" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">发一句话就开工，不用先「新建商品」、不用点菜单</text>
+
+  <text x="628" y="176" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">1 · 详细页</text>
+  <text x="628" y="200" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">品牌 → 卖点 → 细节 → 场景，六段一套</text>
+  <rect x="628" y="220" width="276" height="1" fill="#CFC7B6"/>
+
+  <text x="628" y="252" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">2 · 买家会问什么</text>
+  <text x="628" y="276" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">问题库 + 事实锚点 + 六层关键词</text>
+  <rect x="628" y="296" width="276" height="1" fill="#CFC7B6"/>
+
+  <text x="628" y="328" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">3 · 营销海报</text>
+  <text x="628" y="352" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">按平台尺寸与文化配色出竖版</text>
+  <rect x="628" y="372" width="276" height="1" fill="#CFC7B6"/>
+
+  <text x="628" y="404" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" font-weight="700" fill="#0B0B0B">4 · 询盘回信</text>
+  <text x="628" y="428" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">抽要素、标风险、出四语回信</text>
+
+  <rect x="628" y="452" width="276" height="44" fill="#FFE600" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="644" y="480" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" font-weight="700" fill="#0B0B0B">都在同一个输入框里完成</text>
+</svg>

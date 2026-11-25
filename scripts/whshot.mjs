@@ -1,0 +1,26 @@
+// 简化版：只做「选商品 → 开仓库 → 截图」，用于确认图真的出来了
+import fs from 'node:fs';
+const CDP = 'http://127.0.0.1:9334';
+const out = process.argv[2] || 'docs/preview-auto.png';
+const list = await (await fetch(`${CDP}/json/list`)).json();
+const page = list.find((t) => t.type === 'page' && /8787/.test(t.url)) || list.find((t) => t.type === 'page');
+const ws = new WebSocket(page.webSocketDebuggerUrl);
+await new Promise((r) => (ws.onopen = r));
+let id = 0; const pending = new Map();
+ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } };
+const send = (method, params = {}) => new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (x) => (await send('Runtime.evaluate', { expression: x, awaitPromise: true, returnByValue: true })).result?.result?.value;
+await send('Page.enable'); await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true });
+await send('Page.navigate', { url: `http://localhost:8787/?v=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 2500));
+console.log('products', await ev("document.querySelectorAll('#pdList .pd-item').length"));
+await ev(`(() => { const o=[...document.querySelectorAll('#prodSel option')].filter(o=>o.value); if(o.length){document.querySelector('#prodSel').value=o[o.length-1].value; document.querySelector('#prodSel').dispatchEvent(new Event('change'));} return !!o.length; })()`);
+await new Promise((r) => setTimeout(r, 1500));
+await ev("document.querySelector('#btnWarehouse').click(); true");
+await new Promise((r) => setTimeout(r, 900));
+console.log('wh items', await ev("document.querySelectorAll('#wh .wh-item').length"));
+const shot = await send('Page.captureScreenshot', { format: 'png' });
+fs.writeFileSync(out, Buffer.from(shot.result.data, 'base64'));
+console.log('saved', out);
+ws.close();
+process.exit(0);

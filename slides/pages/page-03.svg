@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <text x="56" y="64" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#6B6558">02 / 谁在用</text>
+  <text x="56" y="132" font-family="Microsoft YaHei, Arial, sans-serif" font-size="38" font-weight="700" fill="#0B0B0B">三种人，同一件事：缺人</text>
+  <text x="56" y="166" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6B6558">共同点：上新频率不低，但请不起一支团队</text>
+
+  <rect x="56" y="204" width="272" height="272" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <rect x="56" y="204" width="272" height="8" fill="#FFE600"/>
+  <text x="80" y="256" font-family="Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#0B0B0B">个人卖家</text>
+  <text x="80" y="284" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">一个人开店，月销几十单</text>
+  <text x="80" y="322" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 拍完图不会做套图</text>
+  <text x="80" y="348" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 英语文案靠翻译软件</text>
+  <text x="80" y="374" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 利润到月底才知道</text>
+  <rect x="80" y="404" width="200" height="1" fill="#CFC7B6"/>
+  <text x="80" y="434" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#2A58FF">用：套图 + 文案 + 记账</text>
+
+  <rect x="344" y="204" width="272" height="272" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <rect x="344" y="204" width="272" height="8" fill="#2A58FF"/>
+  <text x="368" y="256" font-family="Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#0B0B0B">外贸 SOHO</text>
+  <text x="368" y="284" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">2–5 人小团队，跑多平台</text>
+  <text x="368" y="322" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 每个平台一套尺寸</text>
+  <text x="368" y="348" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 询盘多，回得慢</text>
+  <text x="368" y="374" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 报价口径不统一</text>
+  <rect x="368" y="404" width="200" height="1" fill="#CFC7B6"/>
+  <text x="368" y="434" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#2A58FF">用：详情页 + 询盘回信 + 多语</text>
+
+  <rect x="632" y="204" width="272" height="272" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <rect x="632" y="204" width="272" height="8" fill="#10825A"/>
+  <text x="656" y="256" font-family="Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#0B0B0B">工厂小单</text>
+  <text x="656" y="284" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#6B6558">想做零售，但只有样品</text>
+  <text x="656" y="322" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 只有一张样品照</text>
+  <text x="656" y="348" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 不懂当地怎么讲</text>
+  <text x="656" y="374" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">· 先试一个市场</text>
+  <rect x="656" y="404" width="200" height="1" fill="#CFC7B6"/>
+  <text x="656" y="434" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#2A58FF">用：一张图出一套 + 市场模板</text>
+
+  <text x="56" y="512" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#6B6558">同一个商品，三条链路都在一个对话框里，不用学新软件</text>
+</svg>

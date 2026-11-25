@@ -1,0 +1,23 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#F4EFE2"/>
+  <rect x="0" y="0" width="960" height="8" fill="#0B0B0B"/>
+  <rect x="56" y="54" width="44" height="44" fill="#0B0B0B"/>
+  <text x="78" y="86" font-family="Microsoft YaHei, Arial, sans-serif" font-size="26" font-weight="700" fill="#FFE600" text-anchor="middle">渡</text>
+  <text x="114" y="74" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#0B0B0B">DUKOU</text>
+  <text x="114" y="92" font-family="Microsoft YaHei, Arial, sans-serif" font-size="12" fill="#6B6558">出海工作台</text>
+
+  <text x="56" y="236" font-family="Microsoft YaHei, Arial, sans-serif" font-size="96" font-weight="700" fill="#0B0B0B">渡口</text>
+  <rect x="56" y="258" width="396" height="6" fill="#FFE600"/>
+  <text x="56" y="310" font-family="Microsoft YaHei, Arial, sans-serif" font-size="30" font-weight="700" fill="#0B0B0B">一个人做跨境的工作台</text>
+  <text x="56" y="352" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#6B6558">把美工、翻译、运营、会计，塞进一个对话框</text>
+
+  <rect x="56" y="440" width="300" height="40" fill="#FFFDF5" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="72" y="466" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#0B0B0B">知乎黑客松 S3 · AI × 出海</text>
+
+  <rect x="700" y="428" width="204" height="76" fill="#FFE600" stroke="#0B0B0B" stroke-width="2"/>
+  <text x="716" y="460" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#0B0B0B">DEMO</text>
+  <text x="716" y="486" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#0B0B0B">2026 年 11 月 · 澳门站</text>
+
+  <image x="700" y="140" width="204" height="272" href="C:/Users/20708/Documents/deepseek-harness/default-workspace/dukou-workbench/slides/materials/card.png" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="700" y="140" width="204" height="272" fill="none" stroke="#0B0B0B" stroke-width="2"/>
+</svg>
