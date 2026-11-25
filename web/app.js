@@ -410,6 +410,10 @@ function renderWarehouse() {
     }
     const order = state.current.detailOrder || [];
     const imagesSorted = images.slice().sort((a, b) => {
+      // 主图/海报在前，详情段按 detailOrder 排
+      const ra = a.kind === 'detail' ? 1 : 0;
+      const rb = b.kind === 'detail' ? 1 : 0;
+      if (ra !== rb) return ra - rb;
       const ia = order.indexOf(a.id);
       const ib = order.indexOf(b.id);
       if (ia < 0 && ib < 0) return 0;
@@ -556,12 +560,21 @@ function chatReset() {
   const hist = loadHistory();
   for (const m of hist) say(inner, m.who, m.html, { persist: false, replay: true });
   if (!hist.length) {
+    const own = (p?.assets || [])
+      .map((x) => (typeof x === 'string' ? (state.current.assets || []).find((a) => a.id === x) : x))
+      .filter(Boolean);
+    const made = own.filter((a) => ['main', 'marketing', 'detail'].includes(a.kind));
+    const opening = made.length
+      ? `<p>「${esc(p.title)}」已经就位，这套图出好了。</p>
+     <p>最近出的 ${Math.min(made.length, 3)} 张在下面，全部 ${made.length} 张在上角「仓库」里——详情页六段可以拖拽改顺序，也能多选删。</p>
+     <p class="muted-sm">要继续就说一句：换主图、出海报、写文案，或者贴一段买家询盘。</p>`
+      : `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名挑一个。'}</p>
+     <p>选好平台，发一张商品原图再说要求——我出套图。</p>
+     <p class="muted-sm">从这四件事开始，点一下就跑；问到的参数会先跟你确认：</p>`;
     say(
       inner,
       'ai',
-      `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名挑一个。'}</p>
-     <p>选好平台，发一张商品原图再说要求——我出套图。</p>
-     <p class="muted-sm">从这四件事开始，点一下就跑；问到的参数会先跟你确认：</p>
+      `${opening}
        <div class="tiles">
          <button class="tile" type="button" data-fill="出一版详情页，六段齐全">
            <span class="tile-t">1. 详细页</span>
@@ -582,6 +595,10 @@ function chatReset() {
        </div>`,
       { persist: false }
     );
+    if (made.length) {
+      const bubble = $('#chat .chat-inner').lastElementChild;
+      shots(bubble.querySelector('.bubble'), made.slice(-3));
+    }
   }
   box.scrollTop = box.scrollHeight;
 }
