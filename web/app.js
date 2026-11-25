@@ -1050,13 +1050,14 @@ function askBrief({ title, thumb }) {
 }
 
 /** 存 brief → 跑备料任务（精修 2 + 三视图 3 + 视觉规范） */
-async function runPrepare(brief) {
+async function runPrepare(brief, opts = {}) {
   if (!state.current) return null;
   const inner = $('#chat .chat-inner');
   const pid = state.current.id;
+  const silent = !!opts.silent;
   try {
     if (brief) await api(`/api/products/${pid}`, { method: 'PATCH', body: { brief } });
-    const prog = progressBubble('正在备料：精修 → 三视图 → 视觉规范', { loader: true });
+    const prog = silent ? progressBubble('后台备料中…') : progressBubble('正在备料：精修 → 三视图 → 视觉规范', { loader: true });
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
       body: { type: 'visual', productId: pid, params: { platform: state.platform, brief: brief || {}, realAngles: brief?.angles || [] } },
@@ -1064,6 +1065,11 @@ async function runPrepare(brief) {
     const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, job.type));
     prog.done();
     await selectProduct(pid, { keepChat: true });
+    if (silent) {
+      // 精修与三视图只当幕后素材，不当作成品展示
+      say(inner, 'ai', '<p class="muted-sm">素材已备好（后台），出图时会拿它当参考图。</p>', { persist: false });
+      return { silent: true };
+    }
     const spec = res.spec || {};
     const all = state.current?.assets || [];
     const mine = (res.assets || []).map((id) => all.find((a) => a.id === id)).filter(Boolean);
@@ -1125,6 +1131,7 @@ async function doImage(askText, opts) {
     if (state.whTab === 'image') renderWarehouse(); else renderWarehouse();
     state.lastUpload = null;
     state.lastUploadPreview = null;
+    state.uploads = [];
     $('#attachInfo').textContent = '未附图片';
   } catch (e) {
     box.done();
@@ -1265,6 +1272,11 @@ async function doDetail(askText) {
     return;
   }
   const inner = $('#chat .chat-inner');
+  // 没有基底素材就先在后台备一份（不展示精修图），避免纯文生图跑偏
+  if (!whAssets().base.length) {
+    say(inner, 'ai', '<p class="muted-sm">先把这张图的素材备一下（后台），接着出六段。</p>', { persist: false });
+    await runPrepare(null, { silent: true });
+  }
   say(inner, 'user', `<p>${esc(askText || '出详情页')}</p><p class="meta-line">详情页 · 六段 · ${esc(pf(state.platform).name)}</p>`);
   const box = progressBubble('正在排六段详情页…');
   try {
@@ -1436,20 +1448,29 @@ $('#tabs').addEventListener('click', (ev) => {
 $('#prodSel').addEventListener('change', (ev) => { if (ev.target.value) selectProduct(ev.target.value); });
 
 $('#file').onchange = async (ev) => {
-  const file = ev.target.files[0];
-  if (!file) return;
+  const files = [...(ev.target.files || [])].slice(0, 6);
+  if (!files.length) return;
   try {
-    await ensureProduct('', file.name);
-    const { assetId } = await uploadFile(file);
-    state.lastUpload = assetId;
-    state.lastUploadName = file.name;
-    state.lastUploadPreview = URL.createObjectURL(file);
-    $('#attachInfo').textContent = `已附：${file.name}（${(file.size / 1024).toFixed(0)}KB）`;
-    // 第一次拿到图：先问素材，同时不挡着出图
+    await ensureProduct('', files[0].name);
+    const done = [];
+    for (const file of files) {
+      const { assetId, url: fileUrl } = await uploadFile(file);
+      done.push({ id: assetId, name: file.name, url: fileUrl || `/files/${assetId}.png`, preview: URL.createObjectURL(file), size: file.size });
+    }
+    state.uploads = [...(state.uploads || []), ...done].slice(-6);
+    const last = state.uploads[state.uploads.length - 1];
+    state.lastUpload = last.id;
+    state.lastUploadName = files[0].name;
+    state.lastUploadUrl = last.url;
+    state.lastUploadPreview = last.preview;
+    $('#attachInfo').textContent = state.uploads.length > 1
+      ? `已附 ${state.uploads.length} 张：${state.uploads.map((u) => u.name).join('、')}`
+      : `已附：${last.name}（${(last.size / 1024).toFixed(0)}KB）`;
+    // 第一次拿到图：后台备料（不展示精修过程），同时不挡着出图
     const p = state.current;
     if (p && !p.brief?.askedAt) {
       const brief = await askBrief({ title: p.title, thumb: state.lastUploadPreview });
-      runPrepare(brief);
+      runPrepare(brief, { silent: true });
     }
   } catch (e) {
     alert(e.message);
