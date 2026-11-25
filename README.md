@@ -1,8 +1,13 @@
-﻿# 渡口 · 出海工作台（黑客松 S3 参赛作品）
+# 渡口 · 出海工作台（黑客松 S3 参赛作品）
 
 一个人做跨境电商的辅助工作台：**拍一张图 → 出套图 → 出文案 → 上架 → 记账**。
 
 三人队，48 小时，零依赖，克隆下来就能跑。
+
+![对话框出图](docs/preview-chat-flow.png)
+![深色模式](docs/preview-dark.png)
+
+> 想现场讲？看 [docs/路演脚本.md](docs/路演脚本.md)（三分钟、含备用话术与出场检查）。
 
 ## 界面长什么样
 
@@ -33,6 +38,18 @@ node scripts/seed-demo.mjs
 ```
 
 不需要 `npm install`，不需要构建。
+
+## 队友怎么跑
+
+```bash
+git clone <本仓库地址>
+cd dukou-workbench
+cp .env.example .env      # Windows: copy .env.example .env
+node server.mjs           # 没有 npm install
+```
+
+默认 `AI_MOCK=1`，不填 key 也能把四条链路点一遍（出的是占位图）。
+要出真图：在 `.env` 里填 `TEXT_API_KEY`（DeepSeek）与 `IMAGE_API_KEY`（火山方舟，视频共用同一把），`AI_MOCK` 改成 `0`，重启。
 
 ## 目录
 
