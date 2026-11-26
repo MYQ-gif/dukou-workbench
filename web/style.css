@@ -821,8 +821,8 @@ body {
 .msg.ai.fresh .bubble::after { content: '▌'; margin-left: 2px; animation: pxBlink 1s steps(1) infinite; }
 @keyframes pxBlink { 50% { opacity: 0; } }
 /* 消息入场：两段跳，不用缓动曲线 */
-@keyframes pxIn { 0% { opacity: 0; transform: translateY(10px); } 60% { opacity: 1; transform: translateY(-2px); } 100% { opacity: 1; transform: none; } }
-.msg { animation: pxIn 220ms steps(3) both; }
+@keyframes pxIn { 0% { transform: translateY(10px); } 60% { transform: translateY(-2px); } 100% { transform: none; } }
+.msg { animation: pxIn 220ms steps(3); }
 
 /* 分段进度条（HP 条） */
 .progress .bar { height: 14px; border: var(--px) solid var(--ink); background: var(--paper); border-radius: 0; box-shadow: none; }
@@ -1326,3 +1326,30 @@ html[data-theme='dark'] .tile, html[data-theme='dark'] .stats { border-color: va
 /* 小节标题在 flex 面板里会拉满整行，收缩到内容宽 */
 .panel > .sub-h, .panel > h3 { align-self: flex-start; }
 .sub-h { margin: 2px 0 10px; }
+
+/* ===== 两阶段视觉导演卡（Gemini 版 app.js 新增） ===== */
+.director-card { border: 1px solid var(--edge); background: var(--sheet); padding: 12px 14px; margin-top: 4px; }
+.director-card .ask-q { font-weight: 700; margin: 0 0 8px; }
+.director-card .ask-sub { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.director-card .thumb { width: 44px; height: 44px; object-fit: cover; border: 1px solid var(--edge); }
+.opt { margin: 10px 0; }
+.opt-label { font-size: 13px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.opt-hint { font-weight: 400; font-size: 12px; color: var(--muted); }
+.opt-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { border: 1px solid var(--edge); background: var(--sheet); color: var(--ink); padding: 5px 10px; font-size: 13px; cursor: pointer; }
+.chip:hover { border-color: var(--ink); }
+.chip.on { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.in.wide { flex: 1 1 320px; min-width: 220px; padding: 6px 8px; border: 1px solid var(--edge); background: var(--sheet); color: var(--ink); font: inherit; font-size: 13px; }
+.btn-primary { background: var(--ink); color: var(--sheet); border: 1px solid var(--ink); padding: 7px 16px; cursor: pointer; font-size: 14px; }
+.btn-primary:hover { filter: brightness(1.15); }
+.meta-line { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
+.spec { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.spec .sw { width: 18px; height: 18px; border: 1px solid rgba(0,0,0,.25); display: inline-block; }
+.spec-t { font-size: 12px; color: var(--muted); margin-left: 4px; }
+.ask-done { color: var(--muted); font-size: 13px; margin: 0; }
+
+
+/* 截图/验收模式：关掉所有入场动画，避免样式冻结在半透明或裁剪状态 */
+html.static *, html.static *::before, html.static *::after {
+  animation: none !important; transition: none !important; opacity: 1 !important; clip-path: none !important; transform: none !important;
+}

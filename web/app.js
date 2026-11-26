@@ -1,11 +1,26 @@
+window.addEventListener('error', (e) => { const box=document.querySelector('#chat .chat-inner')||document.body; const p=document.createElement('pre'); p.id='__errbox'; p.textContent='JS ERROR: '+e.message+' @ '+e.filename+':'+e.lineno; box.appendChild(p); });
 // 前端逻辑 —— 原生 ES Module，无框架、无构建
 // 分工：生图 / 记账 = 主人；视频翻译 = 马；接口层 = 卓
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-const state = { products: [], current: null, tab: 'image', lastUpload: null, video: null, platform: 'shopee', market: 'sg', whTab: 'image' };
+const state = {
+  products: [],
+  current: null,
+  tab: 'image',
+  lastUpload: null,
+  lastUploadName: null,
+  lastUploadUrl: null,
+  lastUploadPreview: null,
+  uploads: [],
+  video: null,
+  platform: 'shopee',
+  market: 'sg',
+  lang: 'en',
+  whTab: 'image',
+};
 
-/* 平台表：和 lib/ai.mjs 的 PLATFORMS 保持一致（id / 名字 / 规格 / 图标色） */
+/* 平台表：和 lib/ai.mjs 的 PLATFORMS 保持一致 */
 const PLATFORMS = [
   { id: 'taobao', name: '淘宝', region: 'domestic', w: 800, h: 800, color: '#ff5000', short: '淘' },
   { id: 'xianyu', name: '闲鱼', region: 'domestic', w: 800, h: 800, color: '#f5c518', short: '闲' },
@@ -44,18 +59,17 @@ async function loadProducts(preferId) {
   if (!items.length) {
     state.current = null;
     $('#hTitle').textContent = '还没有商品';
-    $('#pMeta').textContent = '发张图或说句话就开始';
+    $('#pMeta').textContent = '选好平台语言，发张图或说句话就开始';
     syncProductPicker();
     chatReset();
     return;
   }
   const target = preferId || (state.current?.id && items.some((p) => p.id === state.current.id) ? state.current.id : null);
   if (!target) {
-    // 进来不替用户选商品：有商品也先停在入口页，等他挑一个或直接说一句话
     state.current = null;
     sel.value = '';
     $('#hTitle').textContent = '还没有选择商品';
-    $('#pMeta').textContent = items.length ? `已有 ${items.length} 个商品，点顶栏挑一个，或直接说一句新建` : '发张图或说句话就开始';
+    $('#pMeta').textContent = items.length ? `已有 ${items.length} 个商品，点顶栏挑一个，或发图新建` : '发张图或说句话就开始';
     syncProductPicker();
     chatReset();
     loadLedger();
@@ -67,10 +81,10 @@ async function loadProducts(preferId) {
 }
 
 function assetTally(p) {
-  const list = p.assets || [];
-  const imgs = list.filter((a) => ['main', 'marketing', 'detail', 'sub'].includes(a.kind)).length;
+  const list = (p.assets || []).filter((a) => !a.deletedAt);
+  const imgs = list.filter((a) => ['main', 'display', 'marketing', 'mockup', 'detail', 'sub'].includes(a.kind)).length;
   const clips = list.filter((a) => a.kind === 'clip').length;
-  return [imgs ? `${imgs} 张图` : '', clips ? `${clips} 段视频` : ''].filter(Boolean).join(' · ') || '还没有产物';
+  return [imgs ? `${imgs} 张成图` : '', clips ? `${clips} 段视频` : ''].filter(Boolean).join(' · ') || '待生成';
 }
 
 function refreshMeta() {
@@ -78,7 +92,7 @@ function refreshMeta() {
   if (!p) return;
   const mkHit = (state.markets || []).find((m) => m.id === (state.market || 'us'));
   const mk = mkHit ? mkHit.label : '';
-  $('#pMeta').textContent = [pf(p.platform).name, mk, (p.targetLangs || []).join(' / '), assetTally(p)].filter(Boolean).join(' · ');
+  $('#pMeta').textContent = [pf(p.platform).name, mk, langName(state.lang || 'en'), assetTally(p)].filter(Boolean).join(' · ');
 }
 
 async function selectProduct(id, opts = {}) {
@@ -101,8 +115,8 @@ function syncProductPicker() {
   if (name) name.textContent = state.current ? state.current.title : '选择商品…';
   const count = state.products?.length || 0;
   $('#pdFoot').textContent = count
-    ? `共 ${count} 个商品。没有？发张图或说一句「新建商品：名字」，我就建一个。`
-    : '还没有商品。发张图或说一句「新建商品：名字」，我就建一个。';
+    ? `共 ${count} 个商品。切换新产品请点「新建商品」或说「新建商品：名字」。`
+    : '还没有商品。选好平台语言，发张图并说一句需求即可开始。';
   renderProductList();
 }
 
@@ -129,7 +143,6 @@ function renderProductList() {
 function pdOpen(open) {
   const panel = $('#pd');
   if (open) {
-    // 径向展开：从顶栏按钮的圆心长出，而不是平移滑动
     const btn = $('#btnProducts').getBoundingClientRect();
     const ox = btn.left + btn.width / 2;
     const oy = btn.top + btn.height / 2;
@@ -148,12 +161,11 @@ function pdOpen(open) {
   }
 }
 
-/* ---------------- 平台选择 ---------------- */
+/* ---------------- 平台与语言选择 ---------------- */
 
 function setPlatform(id, remember = true) {
   const p = pf(id);
   state.platform = p.id;
-  // 平台换了且这个商品还没手动选过市场 → 跟平台默认市场走
   if (remember && (!state.current || !state.current.market)) setMarket(DEFAULT_MARKET[p.id] || 'us', false);
   $('#pfName').textContent = p.name;
   const chip = $('#pfChip');
@@ -164,41 +176,51 @@ function setPlatform(id, remember = true) {
   if (remember && state.current && state.current.platform !== p.id) {
     api(`/api/products/${state.current.id}`, { method: 'PATCH', body: { platform: p.id } }).catch(() => {});
     state.current.platform = p.id;
-    $('#pMeta').textContent = $('#pMeta').textContent.replace(/^.*? · /, `${p.name} · `);
+    refreshMeta();
   }
 }
 
-/* 下拉菜单：同一时间只开一个，点外面关掉 */
 function closeMenus() {
   ['#lgMenu', '#mkMenu', '#pfMenu'].forEach((sel) => {
-    const m = $(sel); if (m) m.classList.add('hidden');
+    const m = $(sel);
+    if (m) m.classList.add('hidden');
   });
   $$('.pf-btn').forEach((b) => b.setAttribute('aria-expanded', 'false'));
 }
+
 function toggleMenu(menuSel, btnSel) {
-  const m = $(menuSel), b = $(btnSel);
+  const m = $(menuSel);
+  const b = $(btnSel);
   if (!m || !b) return;
   const willOpen = m.classList.contains('hidden');
   closeMenus();
   if (willOpen) {
-    m.classList.remove('hidden'); b.setAttribute('aria-expanded', 'true');
+    m.classList.remove('hidden');
+    b.setAttribute('aria-expanded', 'true');
     const box = m.querySelector('.pf-search');
-    if (box) { box.value = ''; if (menuSel === '#mkMenu') fillMarkets(state.markets || []); else buildLangMenu(); }
+    if (box) {
+      box.value = '';
+      if (menuSel === '#mkMenu') fillMarkets(state.markets || []);
+      else buildLangMenu();
+    }
   }
 }
 
-/* 目标语言：出图文案与 listing 文案用哪种语言写 */
 const LANGS = [
-  ['en','英语'],['es','西班牙语'],['pt','葡萄牙语'],['fr','法语'],['de','德语'],['it','意大利语'],
-  ['nl','荷兰语'],['pl','波兰语'],['sv','瑞典语'],['tr','土耳其语'],['ru','俄语'],['ar','阿拉伯语'],
-  ['he','希伯来语'],['ja','日语'],['ko','韩语'],['th','泰语'],['vi','越南语'],['id','印尼语'],
-  ['ms','马来语'],['zh','中文'],
+  ['en', '英语'], ['es', '西班牙语'], ['pt', '葡萄牙语'], ['fr', '法语'], ['de', '德语'], ['it', '意大利语'],
+  ['nl', '荷兰语'], ['pl', '波兰语'], ['sv', '瑞典语'], ['tr', '土耳其语'], ['ru', '俄语'], ['ar', '阿拉伯语'],
+  ['he', '希伯来语'], ['ja', '日语'], ['ko', '韩语'], ['th', '泰语'], ['vi', '越南语'], ['id', '印尼语'],
+  ['ms', '马来语'], ['zh', '中文'],
 ];
-function langName(id) { const hit = LANGS.find((l) => l[0] === id); return hit ? hit[1] : LANGS[0][1]; }
+function langName(id) {
+  const hit = LANGS.find((l) => l[0] === id);
+  return hit ? hit[1] : LANGS[0][1];
+}
 function setLang(id) {
   const next = LANGS.some((l) => l[0] === id) ? id : 'en';
   state.lang = next;
-  const name = $('#lgName'); if (name) name.textContent = langName(next);
+  const name = $('#lgName');
+  if (name) name.textContent = langName(next);
   $$('#lgItems .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.lg === next));
 }
 function wireMenuSearch() {
@@ -212,7 +234,8 @@ function wireMenuSearch() {
 }
 
 function buildLangMenu() {
-  const box = $('#lgItems'); if (!box) return;
+  const box = $('#lgItems');
+  if (!box) return;
   const q = ($('#lgSearch')?.value || '').trim().toLowerCase();
   const hit = LANGS.filter((l) => !q || l[1].includes(q) || l[0].includes(q));
   box.innerHTML = hit.length
@@ -223,7 +246,6 @@ function buildLangMenu() {
   $$('#lgItems .pf-item').forEach((b) => b.classList.toggle('on', b.dataset.lg === cur));
 }
 
-/* 目标市场：决定提示词里的文化适配（不是翻译，是改写） */
 const DEFAULT_MARKET = { taobao: 'cn', xianyu: 'cn', jd: 'cn', shopee: 'sg', lazada: 'sg', tiktok: 'sg', amazon: 'us', ebay: 'us' };
 
 function setMarket(id, remember = true) {
@@ -240,7 +262,6 @@ function setMarket(id, remember = true) {
   }
 }
 
-/* 市场按大区分组：先列常用的，再列整表 */
 const MARKET_GROUPS = [
   ['常见', ['cn', 'hk', 'mo', 'tw', 'sg', 'my', 'th', 'vn', 'id', 'ph', 'jp', 'kr', 'in']],
   ['北美 / 拉美', ['us', 'ca', 'mx', 'br', 'cl', 'arg', 'co']],
@@ -274,7 +295,8 @@ function fillMarkets(list) {
   setMarket(cur, false);
 }
 
-function buildPlatformMenu() {  const item = (p) => `<button class="pf-item" data-pf="${p.id}" type="button">
+function buildPlatformMenu() {
+  const item = (p) => `<button class="pf-item" data-pf="${p.id}" type="button">
       <span class="pf-chip" style="background:${p.color};color:${['#f5c518', '#ff9900', '#f2c14e'].includes(p.color) ? '#1a1a1a' : '#fff'}">${p.short}</span>
       <span class="pf-label">${p.name}</span>
       <span class="pf-size">${p.w}×${p.h}</span>
@@ -284,13 +306,14 @@ function buildPlatformMenu() {  const item = (p) => `<button class="pf-item" dat
   setPlatform(state.platform, false);
 }
 
-/* ---------------- 仓库 ---------------- */
+/* ---------------- 仓库（持久化基底素材 + 成品图） ---------------- */
 
 function whAssets() {
-  const assets = state.current?.assets || [];
+  const assets = (state.current?.assets || []).filter((a) => !a.deletedAt);
   return {
     base: assets.filter((a) => a.kind === 'refined' || a.kind === 'angle' || a.kind === 'angle_real'),
-    images: assets.filter((a) => ['main', 'marketing', 'detail', 'sub'].includes(a.kind)),
+    uploads: assets.filter((a) => a.kind === 'upload' || a.kind === 'angle_real'),
+    images: assets.filter((a) => ['main', 'display', 'marketing', 'mockup', 'detail', 'sub'].includes(a.kind)),
     copies: assets.filter((a) => a.kind === 'copy'),
     content: assets.filter((a) => ['faq', 'anchor', 'keyword_layer'].includes(a.kind)),
     inquiry: assets.filter((a) => ['inquiry', 'reply'].includes(a.kind)),
@@ -356,7 +379,6 @@ async function whDeletePicked() {
   });
 }
 
-/* 底部提示条：删除这类可逆操作给 6 秒后悔时间 */
 let toastTimer = null;
 function toast(text, onUndo) {
   const el = $('#toast');
@@ -400,17 +422,16 @@ function renderWarehouse() {
 
   const body = $('#whBody');
   if (!state.current) {
-    body.innerHTML = '<p class="muted">还没有商品。新建一个，图和文案会攒在这里。</p>';
+    body.innerHTML = '<p class="muted">还没有商品。新建一个，基底素材和成品图会攒在这里。</p>';
     return;
   }
   if (state.whTab === 'image') {
     if (!base.length && !images.length) {
-      body.innerHTML = '<p class="muted">还没有图。回「生图」发一句，出来的图会自动进这里。</p>';
+      body.innerHTML = '<p class="muted">还没有图。回「生图」发张产品图并说一句需求，精修基底与成图会自动进这里。</p>';
       return;
     }
     const order = state.current.detailOrder || [];
     const imagesSorted = images.slice().sort((a, b) => {
-      // 主图/海报在前，详情段按 detailOrder 排
       const ra = a.kind === 'detail' ? 1 : 0;
       const rb = b.kind === 'detail' ? 1 : 0;
       if (ra !== rb) return ra - rb;
@@ -422,15 +443,29 @@ function renderWarehouse() {
       return ia - ib;
     });
     let seq = 0;
+    const KIND_TEXT = {
+      refined: '精修底图',
+      angle: '视角基准',
+      angle_real: '实拍视角',
+      display: '产品展示',
+      main: '电商主图',
+      marketing: '营销海报',
+      mockup: '品牌样机',
+      detail: '详情页',
+    };
     const card = (a) => {
       const isReal = a.kind === 'angle_real';
       const label =
-        a.kind === 'refined' ? `精修 · ${a.meta?.crop || '1:1'}` : a.kind === 'angle' ? `视角 · ${a.meta?.angle || ''}` : a.meta?.template || a.kind;
+        a.kind === 'refined'
+          ? `精修底图 · ${a.meta?.crop || '1:1'}`
+          : a.kind === 'angle' || a.kind === 'angle_real'
+            ? `${KIND_TEXT[a.kind]} · ${a.meta?.angle || ''}`
+            : `${KIND_TEXT[a.meta?.template || a.kind] || a.kind}${a.meta?.index ? ` #${a.meta.index}` : ''}`;
       const picked = whSel.picked.has(a.id);
       const canDrag = a.kind === 'detail';
       seq += 1;
       return `<figure class="wh-item${picked ? ' picked' : ''}" data-asset="${a.id}" data-drag="${canDrag ? '1' : '0'}" draggable="${canDrag}" style="--i:${seq}">
-        <img src="${a.url}" alt=""${isReal ? '' : ''}>
+        <img src="${a.url}" alt="">
         ${whSel.on ? '<span class="pick" aria-hidden="true"></span>' : ''}
         <figcaption>${esc(label)} · ${a.width}×${a.height}
           ${isReal ? '<span class="chip-real">实拍</span>' : a.meta?.usedRefined ? '<span class="chip-ref">引精修</span>' : ''}
@@ -439,9 +474,9 @@ function renderWarehouse() {
     };
     body.classList.toggle('picking', whSel.on);
     body.innerHTML = [
-      base.length ? `<h4 class="wh-group">基底素材 <span class="muted">备料产物，后续出图会引用</span></h4><div class="wh-grid">${base.map(card).join('')}</div>` : '',
+      base.length ? `<h4 class="wh-group">锁定基底素材库 <span class="muted">同产品周期内持续复用</span></h4><div class="wh-grid">${base.map(card).join('')}</div>` : '',
       images.length
-        ? `<h4 class="wh-group">成品图 ${order.length ? '<span class="muted">详情段可拖拽改顺序</span>' : ''}</h4><div class="wh-grid">${imagesSorted.map(card).join('')}</div>`
+        ? `<h4 class="wh-group">交付成品图 ${order.length ? '<span class="muted">详情屏可拖拽调序</span>' : ''}</h4><div class="wh-grid">${imagesSorted.map(card).join('')}</div>`
         : '',
     ].join('');
 
@@ -550,6 +585,7 @@ function whOpen(open) {
   if (open) renderWarehouse();
 }
 
+
 /* ---------------- 对话 ---------------- */
 
 function chatReset() {
@@ -562,35 +598,35 @@ function chatReset() {
   if (!hist.length) {
     const own = (p?.assets || [])
       .map((x) => (typeof x === 'string' ? (state.current.assets || []).find((a) => a.id === x) : x))
-      .filter(Boolean);
-    const made = own.filter((a) => ['main', 'marketing', 'detail'].includes(a.kind));
+      .filter((a) => a && !a.deletedAt);
+    const made = own.filter((a) => ['main', 'display', 'marketing', 'mockup', 'detail'].includes(a.kind));
     const opening = made.length
-      ? `<p>「${esc(p.title)}」已经就位，这套图出好了。</p>
-     <p>最近出的 ${Math.min(made.length, 3)} 张在下面，全部 ${made.length} 张在上角「仓库」里——详情页六段可以拖拽改顺序，也能多选删。</p>
-     <p class="muted-sm">要继续就说一句：换主图、出海报、写文案，或者贴一段买家询盘。</p>`
-      : `<p>${p ? `「${esc(p.title)}」已经就位。` : '还没选商品。发张图或说一句话，我就建一个新商品；想接着做已有的，点顶栏那个商品名挑一个。'}</p>
-     <p>选好平台，发一张商品原图再说要求——我出套图。</p>
-     <p class="muted-sm">从这四件事开始，点一下就跑；问到的参数会先跟你确认：</p>`;
+      ? `<p>「${esc(p.title)}」已就位，基底素材库已锁定复用。</p>
+     <p>最近生成的 ${Math.min(made.length, 3)} 张成图在下面，全部 ${made.length} 张在右上角「仓库」里。</p>
+     <p class="muted-sm">同产品下可直接继续点单：出精修图、产品展示图、电商主图、营销海报或 6 屏详情页。</p>`
+      : `<p>${p ? `「${esc(p.title)}」已就位。` : '请先在顶栏选定目标平台与语言，再上传 1 张产品实拍图并输入一句话需求。'}</p>
+     <p>收到图片与需求后，我会先做<strong>商业分析与纯文本主视觉定调</strong>，并一次性向你确认补充视角与交付方式，锁定素材库后再精准出图。</p>
+     <p class="muted-sm">也可以直接点下面任意快捷指令开始：</p>`;
     say(
       inner,
       'ai',
       `${opening}
        <div class="tiles">
-         <button class="tile" type="button" data-fill="出一版详情页，六段齐全">
-           <span class="tile-t">1. 详细页</span>
-           <span class="tile-d">品牌 → 卖点 → 细节 → 功能 → 场景 → 购买理由</span>
+         <button class="tile" type="button" data-fill="帮我做一套完整的6屏详情页图片">
+           <span class="tile-t">1. 详情页套图（6屏）</span>
+           <span class="tile-d">品牌认知 → 核心卖点 → 产品细节 → 功能展示 → 使用场景 → 购买理由</span>
          </button>
-         <button class="tile" type="button" data-fill="这批买家会问什么？顺便把形容词换成数字">
-           <span class="tile-t">2. 卖家会问什么</span>
-           <span class="tile-d">问题库 + 事实锚点 + 六层关键词，照着改详情</span>
+         <button class="tile" type="button" data-fill="出一张电商主图，突出核心卖点">
+           <span class="tile-t">2. 电商主图</span>
+           <span class="tile-d">锁定原图主体，围绕单一核心卖点打造高点击主图</span>
          </button>
-         <button class="tile" type="button" data-fill="出一张营销海报，标题写 STAY A WHILE，突出实木手工">
-           <span class="tile-t">3. 营销海报</span>
-           <span class="tile-d">竖版海报，标题 + 三条卖点，按市场配色</span>
+         <button class="tile" type="button" data-fill="出一张产品展示图，突出材质与高级氛围感">
+           <span class="tile-t">3. 产品展示图</span>
+           <span class="tile-d">商业布景与自然光影融合，突出高级质感与克制留白</span>
          </button>
-         <button class="tile" type="button" data-fill="Hi, we are a furniture retailer in Ho Chi Minh City. We need 200 pcs, 1.2m, natural finish. What is your FOB price and lead time? Do you have fumigation certificate? We prefer T/T 30% deposit.">
-           <span class="tile-t">4. 询盘回信</span>
-           <span class="tile-d">贴一段买家来信，抽要素、标风险、出多语回信</span>
+         <button class="tile" type="button" data-fill="出一张营销海报，适配当前平台语言">
+           <span class="tile-t">4. 营销海报 & 样机</span>
+           <span class="tile-d">支持竖版/横版/方形海报，可延展手机版与包装/展架/广告牌样机</span>
          </button>
        </div>`,
       { persist: false }
@@ -603,7 +639,6 @@ function chatReset() {
   box.scrollTop = box.scrollHeight;
 }
 
-/* 每个商品各自记一份对话，刷新后还在 */
 const histKey = () => (state.current ? `dukou:chat:${state.current.id}` : null);
 function loadHistory() {
   const k = histKey();
@@ -617,7 +652,6 @@ function pushHistory(who, html) {
   arr.push({ who, html });
   try { localStorage.setItem(k, JSON.stringify(arr.slice(-24))); } catch {}
 }
-/* 气泡里后加的图要补记一次，否则刷新后只剩文字 */
 function patchHistory(html) {
   const k = histKey();
   if (!k) return;
@@ -627,22 +661,20 @@ function patchHistory(html) {
   try { localStorage.setItem(k, JSON.stringify(arr)); } catch {}
 }
 
-/* 不用表单建商品：说话或发图就自动建 */
 const NEW_WORDS = /^(?:新建商品|新商品|新建|新加|换个商品|换一个商品|换商品)/;
 function newProductTitle(text) {
   const m = String(text || '').match(/^(?:新建商品|新商品|新建|新加|换个商品|换一个商品|换商品)\s*[:：,，]?\s*/);
   return m ? text.slice(m[0].length).trim() : '';
 }
 
-async function ensureProduct(text, fileName) {
+async function ensureProduct(text, fileName, forceNew = false) {
   const explicit = newProductTitle(text || '');
-  const wantsNew = NEW_WORDS.test(String(text || ''));
+  const wantsNew = forceNew || NEW_WORDS.test(String(text || ''));
   if (state.current && !wantsNew) return state.current;
 
   const fallback = String(fileName || '').replace(/\.[^.]+$/, '');
-  const guess = String(text || '').slice(0, 16);
-  // 「用这张图…」「做一段…」这类是动作，不是商品名，别把整句话当标题
-  const looksLikeAction = /^(用|把|做|出|生成|来|给我|帮|按|这|那)/.test(guess.trim());
+  const guess = String(text || '').slice(0, 18);
+  const looksLikeAction = /^(用|把|做|出|生成|来|给我|帮|按|这|那|我要)/.test(guess.trim());
   const title = (explicit || (wantsNew || looksLikeAction ? '' : guess) || fallback || '新商品').trim();
   const product = await api('/api/products', {
     method: 'POST',
@@ -652,7 +684,7 @@ async function ensureProduct(text, fileName) {
       sellingPoints: [],
       market: state.market || 'us',
       rawText: wantsNew ? '' : String(text || ''),
-      targetLangs: ['en'],
+      targetLangs: [state.lang || 'en'],
     },
   });
   await loadProducts(product.id);
@@ -669,8 +701,7 @@ function say(container, who, html, opts = {}) {
     el.innerHTML = '<div class="bubble"></div>';
     el.querySelector('.bubble').innerHTML = html;
   }
-  // 只有「刚生成」的 AI 消息做逐段揭示；回放历史一律不动
-  if (who === 'ai' && opts.reveal !== false && !opts.replay) el.classList.add('fresh');
+  if (who === 'ai' && opts.reveal !== false && !opts.replay && !/static/.test(location.search)) el.classList.add('fresh');
   container.appendChild(el);
   if (opts.persist !== false) pushHistory(who, html);
   const scroller = el.closest('.chat');
@@ -685,7 +716,7 @@ function shots(bubble, assets) {
     const fig = document.createElement('figure');
     fig.className = 'drop';
     fig.style.animationDelay = `${i * 45}ms`;
-    fig.innerHTML = `<img src="${a.url}" alt=""><figcaption>${a.kind} · ${a.width}×${a.height}</figcaption>`;
+    fig.innerHTML = `<img src="${a.url}" alt=""><figcaption>${esc(tplLabel(a.meta?.template || a.kind))} · ${a.width}×${a.height}</figcaption>`;
     const img = fig.querySelector('img');
     img.onclick = () => window.open(a.url, '_blank');
     img.onload = () => {
@@ -694,7 +725,6 @@ function shots(bubble, assets) {
     };
     wrap.appendChild(fig);
   });
-  // 三张以上改成横向吸附条，别把气泡撑成一堵墙
   if (assets.length > 3) wrap.classList.add('many');
   bubble.appendChild(wrap);
   patchHistory(bubble.innerHTML);
@@ -702,7 +732,6 @@ function shots(bubble, assets) {
 
 function progressBubble(text, opts = {}) {
   const inner = $('#chat .chat-inner');
-  // 长任务（Seedance 出片要等几分钟）先播一个跑动 loader，真进度一到就收起来
   const boot = opts.loader ? '<div class="duk-loader-wrap" aria-hidden="true"><span class="duk-loader"></span></div>' : '';
   const el = say(inner, 'ai', `${boot}<div class="typing"><i></i><i></i><i></i></div><p>${text}</p><div class="progress"><div class="bar"><i></i></div><span>0%</span></div>`, { persist: false });
   const bar = el.querySelector('.bar i');
@@ -719,14 +748,11 @@ function progressBubble(text, opts = {}) {
       el.classList.add('slow');
     }, after);
   }
-  // 弹簧步进：显示值追目标值，带一点过冲后落定，别一格一格跳
   let target = 0;
   let cur = 0;
-  let vel = 0;
   let raf = null;
   let tag = '';
   const frame = () => {
-    // 像素节奏：按固定档位一格一格跳，不做弹簧缓动
     cur = target > cur ? Math.min(target, cur + 3) : target;
     if (bar) bar.style.width = cur + '%';
     if (label) label.textContent = Math.round(cur) + '%' + (tag ? ' · ' + tag : '');
@@ -742,7 +768,6 @@ function progressBubble(text, opts = {}) {
         bootEl.classList.add('done');
         setTimeout(() => bootEl.remove(), 260);
       }
-      // 进度真上来了就把兜底文案收回原句
       if (target >= 35 && el.classList.contains('slow')) {
         el.classList.remove('slow');
         textEl.textContent = originalText;
@@ -762,11 +787,19 @@ function progressBubble(text, opts = {}) {
 
 /* ---------------- 上传 ---------------- */
 
-async function uploadFile(file) {
+async function uploadFile(file, opts = {}) {
   const buf = await file.arrayBuffer();
-  const res = await fetch(`/api/uploads${state.current ? `?productId=${state.current.id}` : ''}`, {
+  const qs = new URLSearchParams();
+  if (state.current) qs.set('productId', state.current.id);
+  if (opts.kind) qs.set('kind', opts.kind);
+  if (opts.angle) qs.set('angle', opts.angle);
+  const res = await fetch(`/api/uploads?${qs.toString()}`, {
     method: 'POST',
-    headers: { 'content-type': file.type || 'application/octet-stream', 'x-filename': file.name },
+    headers: {
+      'content-type': file.type || 'application/octet-stream',
+      'x-filename': encodeURIComponent(file.name),
+      ...(opts.kind ? { 'x-asset-kind': opts.kind } : {}),
+    },
     body: buf,
   });
   const data = await res.json();
@@ -774,7 +807,7 @@ async function uploadFile(file) {
   return data;
 }
 
-/* ---------------- 任务 ---------------- */
+/* ---------------- 任务轮询 ---------------- */
 
 function jobPromise(jobId, onTick) {
   return new Promise((resolve, reject) => {
@@ -789,267 +822,168 @@ function jobPromise(jobId, onTick) {
   });
 }
 
-/* ---------------- 出图参数：在对话区里问 ---------------- */
+/* ---------------- 5 种交付模式识别 ---------------- */
 
-const CN_NUM = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6 };
+const DELIVERABLE_OPTIONS = [
+  ['refine', '产品精修图'],
+  ['display', '产品展示图'],
+  ['main', '电商主图'],
+  ['marketing', '营销海报'],
+  ['detail', '详情页套图（6屏）'],
+];
 
-/** 从用户这句话里读出已经说定的参数，读到的就不再问 */
-function readIntent(text) {
+function detectDeliverableMode(text) {
   const s = String(text || '');
-  const known = {};
-  const cnt = s.match(/([1-6一二两三四五六])\s*张/);
-  if (cnt) known.count = CN_NUM[cnt[1]] || Number(cnt[1]);
-  const wh = s.match(/(\d{3,4})\s*[x×*]\s*(\d{3,4})/i);
-  if (wh) known.size = `${Number(wh[1])}x${Number(wh[2])}`;
-  else if (/竖屏|9\s*[:：]\s*16/.test(s)) known.size = '1080x1920';
-  else if (/方图|正方|1\s*[:：]\s*1/.test(s)) known.size = '800x800';
-  if (/4k|超清/i.test(s)) known.quality = '4k';
-  else if (/2k|高清/i.test(s)) known.quality = '2k';
-  else if (/1k|标准清晰|标清/.test(s)) known.quality = '1k';
-  return known;
+  if (/精修|修图|白底图|去背景|去杂物/.test(s)) return 'refine';
+  if (/展示图|产品展示|场景图|氛围图/.test(s)) return 'display';
+  if (/详情页|详情长图|详情图|六段|六屏|整页详情|套图/.test(s)) return 'detail';
+  if (/海报|poster|宣传图|活动图|样机/.test(s)) return 'marketing';
+  if (/主图|首图|listing/.test(s)) return 'main';
+  const sel = $('#template')?.value;
+  if (['refine', 'display', 'main', 'marketing', 'detail'].includes(sel)) return sel;
+  return 'main';
 }
 
-/** 只问还没说定的；三件都说清了就直接 resolve，不发卡片 */
-function askParams({ title, thumb, ask, known = {} }) {
-  const base = pf(state.platform);
-  const st = {
-    count: known.count || ($('#template').value === 'detail' ? 3 : 2),
-    size: known.size || 'platform',
-    quality: known.quality || '1k',
-  };
-  const need = {
-    count: !known.count,
-    size: !known.size,
-    quality: !known.quality,
-  };
-  const resolveOpts = (s) => {
-    const [w, h] = s.size === 'platform' ? [null, null] : String(s.size).split('x').map(Number);
-    return { count: s.count, width: w, height: h, quality: s.quality };
-  };
-  if (!need.count && !need.size && !need.quality) return Promise.resolve(resolveOpts(st));
 
-  const inner = $('#chat .chat-inner');
-  // 上一张没人答的参数卡先收掉，别叠两张
-  document.querySelectorAll('#chat .msg.ai .ask-q').forEach((q) => {
-    const m = q.closest('.msg');
-    if (m && m.querySelector('.ask-foot')) m.remove();
-  });
-  const left = [need.count && '几张', need.size && '多大', need.quality && '多清晰'].filter(Boolean).join('、');
-
-  const el = say(inner, 'ai', `
-    <p class="ask-q">还差${left}，定完我就开工。</p>
-    ${ask ? `<div class="ask-quote">${esc(ask)}</div>` : ''}
-    <div class="ask-sub">${esc(title || '新商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
-    ${need.count ? `
-    <div class="opt">
-      <div class="opt-label">要几张<span class="opt-hint"><b id="cntVal">${st.count}</b> 张 · 拖动会按速度吸附</span></div>
-      <div class="snap-wrap">
-        <input id="cntRange" class="snap" type="range" min="1" max="6" step="1" value="${st.count}" aria-label="要几张">
-        <div class="snap-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
-      </div>
-      <div class="opt-row" data-k="count">
-        <button type="button" class="chip${st.count === 1 ? ' on' : ''}" data-v="1">1 张</button>
-        <button type="button" class="chip${st.count === 2 ? ' on' : ''}" data-v="2">2 张<span class="tag">常用</span></button>
-        <button type="button" class="chip${st.count === 3 ? ' on' : ''}" data-v="3">3 张</button>
-        <button type="button" class="chip${st.count === 5 ? ' on' : ''}" data-v="5">5 张</button>
-        <span class="custom">自定义 <input class="in cnt" type="number" min="1" max="6" placeholder="4"></span>
-      </div>
-    </div>` : ''}
-    ${need.size ? `
-    <div class="opt">
-      <div class="opt-label">尺寸<span class="opt-hint">当前：${base.name} ${base.w}×${base.h}</span></div>
-      <div class="opt-row" data-k="size">
-        <button type="button" class="chip${st.size === 'platform' ? ' on' : ''}" data-v="platform">平台默认 <span class="dim">${base.w}×${base.h}</span></button>
-        <button type="button" class="chip${st.size === '800x800' ? ' on' : ''}" data-v="800x800">方图 1:1 <span class="dim">800×800</span></button>
-        <button type="button" class="chip${st.size === '1080x1920' ? ' on' : ''}" data-v="1080x1920">竖屏 9:16 <span class="dim">1080×1920</span></button>
-        <span class="custom">自定义 <input class="in w" type="number" min="200" max="4000" placeholder="${base.w}">×<input class="in h" type="number" min="200" max="4000" placeholder="${base.h}"></span>
-      </div>
-    </div>` : ''}
-    ${need.quality ? `
-    <div class="opt">
-      <div class="opt-label">清晰度<span class="opt-hint">主流平台 1K 就够</span></div>
-      <div class="opt-row" data-k="quality">
-        <button type="button" class="chip${st.quality === '1k' ? ' on' : ''}" data-v="1k">标准 1K<span class="tag">够用</span></button>
-        <button type="button" class="chip${st.quality === '2k' ? ' on' : ''}" data-v="2k">高清 2K</button>
-        <button type="button" class="chip${st.quality === '4k' ? ' on' : ''}" data-v="4k">超清 4K</button>
-      </div>
-    </div>` : ''}
-    <div class="ask-foot">
-      <button type="button" class="link" data-act="cancel">先不出</button>
-      <button type="button" class="btn-primary" data-act="go">开始生成</button>
-    </div>
-  `, { persist: false });
-
-  const cntEl = el.querySelector('.cnt');
-  const wEl = el.querySelector('.custom .w');
-  const hEl = el.querySelector('.custom .h');
-  const bubble = el.querySelector('.bubble');
-
-  const sync = () => {
-    if (cntEl) el.querySelectorAll('.opt-row[data-k="count"] .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.v) === st.count && !cntEl.value));
-    el.querySelectorAll('.opt-row[data-k="size"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.size));
-    el.querySelectorAll('.opt-row[data-k="quality"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.quality));
-  };
-
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = (ok) => {
-      if (done) return;
-      done = true;
-      if (!ok) { el.remove(); resolve(null); return; }
-      if (wEl && (wEl.value || hEl.value)) st.size = `${Number(wEl.value) || base.w}x${Number(hEl.value) || base.h}`;
-      if (cntEl && cntEl.value) st.count = Number(cntEl.value);
-      const opts = resolveOpts(st);
-      const sizeText = opts.width ? `${opts.width}×${opts.height}` : `${base.name} ${base.w}×${base.h}`;
-      bubble.innerHTML = `<p class="ask-done">好，${opts.count} 张 · ${sizeText} · ${opts.quality.toUpperCase()}，开始出图。</p>`;
-      patchHistory(bubble.innerHTML);
-      const scroller = el.closest('.chat');
-      if (scroller) scroller.scrollTop = scroller.scrollHeight;
-      resolve(opts);
-    };
-
-    el.addEventListener('click', (ev) => {
-      const chip = ev.target.closest('.chip');
-      if (chip) {
-        const k = chip.closest('.opt-row').dataset.k;
-        st[k] = k === 'count' ? Number(chip.dataset.v) : chip.dataset.v;
-        if (k === 'count' && cntEl) cntEl.value = '';
-        if (k === 'size' && wEl) { wEl.value = ''; hEl.value = ''; }
-        sync();
-        return;
-      }
-      const act = ev.target.closest('[data-act]');
-      if (act) finish(act.dataset.act === 'go');
-    });
-    if (cntEl) cntEl.oninput = () => { if (cntEl.value) st.count = Number(cntEl.value); sync(); };
-    if (wEl) wEl.oninput = hEl.oninput = () => { if (wEl.value || hEl.value) st.size = 'custom'; sync(); };
-
-    /* 张数滑块：松手时按拖动速度再走一格，然后吸附到整数 */
-    const range = el.querySelector('#cntRange');
-    const cntVal = el.querySelector('#cntVal');
-    if (range) {
-      let samples = [];
-      const setCount = (v, fromRange) => {
-        st.count = Math.min(6, Math.max(1, Math.round(v)));
-        if (cntEl) cntEl.value = '';
-        if (cntVal) cntVal.textContent = st.count;
-        if (fromRange) range.value = String(st.count);
-        sync();
-      };
-      range.oninput = () => {
-        const now = performance.now();
-        samples.push({ t: now, v: Number(range.value) });
-        samples = samples.filter((s) => now - s.t < 120);
-        if (cntVal) cntVal.textContent = range.value;
-        st.count = Number(range.value);
-        sync();
-      };
-      const release = () => {
-        if (samples.length < 2) return setCount(Number(range.value), true);
-        const first = samples[0];
-        const last = samples[samples.length - 1];
-        const dt = Math.max(16, last.t - first.t);
-        const velocity = (last.v - first.v) / dt; // 格/毫秒
-        const projected = last.v + velocity * 90; // 惯性再往前推一点
-        setCount(projected, true);
-        samples = [];
-      };
-      range.onchange = release;
-      if (window.PointerEvent) range.addEventListener('pointerup', release);
-      range.addEventListener('keydown', (ev) => {
-        if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') setTimeout(() => setCount(Number(range.value), true), 0);
-      });
-    }
-  });
-}
-
-const IMAGE_WORDS = /图|主图|详情|海报|套图|出图|生图/;
-// 提到短片/运镜就是出视频；但同时说「主图/详情」时仍按出图走
-const CLIP_WORDS = /视频|短片|短视频|运镜|动起来|片头/;
-const IMAGE_ONLY = /主图|详情图|白底图|海报|套图/;
-const GEO_WORDS = /会问什么|买家问题|买家会问|关键词|锚点|内容资产|GEO|AI 可见度|ai 可见度/i;
-const DETAIL_WORDS = /详情页|详情长图|详情图|六段|整页详情/;
-const INQUIRY_WORDS = /询盘|回信|报价|买家来信|客户问|inquiry/i;
-// 一整段带价格/数量/交期口吻的外文，直接当询盘
-const looksLikeInquiry = (t) =>
-  t.length > 120 &&
-  !/^[\u4e00-\u9fa5]/.test(t) &&
-  /(price|quote|quotation|pcs|moq|lead time|fob|cif|deposit|sample)/i.test(t);
-
-/* ---------------- 补素材：先问再动手 ---------------- */
+/* ---------------- 阶段一：8 维商业分析 + 纯文本主视觉 + 前置收口提问（不生图） ---------------- */
 
 const ANGLES = [
   ['front', '正面'],
-  ['deg45', '45°'],
+  ['deg45', '45°侧角'],
   ['side_right', '侧面'],
   ['back', '背面'],
-];
-const USAGE = [
-  ['main', '电商主图'],
-  ['social', '社交种草'],
-  ['detail', '详情页'],
-  ['all', '都做'],
+  ['detail_macro', '细节特写'],
 ];
 
-function askBrief({ title, thumb }) {
+function askDirectorBrief({ title, thumb, analysis, spec, initialMode }) {
   const inner = $('#chat .chat-inner');
+  // 收起旧的未完成确认卡，避免重复叠卡片
+  document.querySelectorAll('#chat .msg.ai .director-card').forEach((card) => {
+    card.closest('.msg')?.remove();
+  });
+
+  const pal = spec?.palette || {};
+  const needModelDefault = ['apparel', 'beauty', 'home', 'sport', 'jewel'].includes(analysis?.category);
+  const st = {
+    mode: initialMode || 'main',
+    angles: [],
+    model: needModelDefault ? 'yes' : 'no',
+    quality: '1k',
+    extraUploads: 0,
+  };
+
   const el = say(inner, 'ai', `
-    <p class="ask-q">先问几句，出图能准很多——都能跳过。</p>
-    <div class="ask-sub">${esc(title || '新商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
-    <div class="opt">
-      <div class="opt-label">手上有哪些实拍角度<span class="opt-hint">有的直接说，省一次生成</span></div>
-      <div class="opt-row" data-k="angles">
-        ${ANGLES.map(([v, t]) => `<button type="button" class="chip" data-v="${v}">${t}</button>`).join('')}
+    <div class="director-card">
+      <p class="ask-q">已完成商业分析与纯文本主视觉定调（暂未生图），确认以下细节后立刻锁定素材库开工：</p>
+      <div class="ask-sub">${esc(title || '当前商品')}${thumb ? `<img class="thumb" src="${thumb}" alt="">` : ''}</div>
+
+      <div class="opt" style="background:rgba(0,0,0,0.03);padding:8px 10px;margin-bottom:8px;">
+        <div class="opt-label">一、商业分析与主视觉规范（纯文本定调）<span class="opt-hint">${esc(analysis?.categoryName || '')}</span></div>
+        <ul style="margin:4px 0 6px 16px;padding:0;font-size:13px;line-height:1.5;">
+          <li><b>产品定位：</b>${esc(analysis?.positioning || '')}</li>
+          <li><b>目标客群：</b>${esc(analysis?.target_user || '')}</li>
+          <li><b>视觉风格：</b>${esc(analysis?.visual_style || '')}</li>
+          <li><b>光影与构图：</b>${esc(spec?.lighting || '')}；${esc(spec?.composition || '')}</li>
+        </ul>
+        ${pal.base ? `<div class="spec">${['base', 'accent', 'support'].map((k) => (pal[k] ? `<span class="sw" style="background:${pal[k]}" title="${k} ${pal[k]}"></span>` : '')).join('')}<span class="spec-t">主视觉色板 · 规范 v${spec?.version || 1}</span></div>` : ''}
       </div>
-    </div>
-    <div class="opt">
-      <div class="opt-label">用在哪儿</div>
-      <div class="opt-row" data-k="usage">
-        ${USAGE.map(([v, t]) => `<button type="button" class="chip${v === 'main' ? ' on' : ''}" data-v="${v}">${t}</button>`).join('')}
+
+      <div class="opt">
+        <div class="opt-label">1. 确认本次交付物<span class="opt-hint">精修与视角将作为基底素材锁死复用</span></div>
+        <div class="opt-row" data-k="mode">
+          ${DELIVERABLE_OPTIONS.map(([v, t]) => `<button type="button" class="chip${st.mode === v ? ' on' : ''}" data-v="${v}">${t}</button>`).join('')}
+        </div>
       </div>
-    </div>
-    <div class="opt">
-      <div class="opt-label">要不要模特<span class="opt-hint">服饰美妆才需要</span></div>
-      <div class="opt-row" data-k="model">
-        <button type="button" class="chip on" data-v="no">不用</button>
-        <button type="button" class="chip" data-v="yes">要</button>
+
+      <div class="opt">
+        <div class="opt-label">2. 补充其他角度实拍图（推荐，直接入库省去生成）<span class="opt-hint" id="extraAngleHint">有背面/侧面/细节图可直接传</span></div>
+        <div class="opt-row" data-k="angles">
+          ${ANGLES.map(([v, t]) => `<button type="button" class="chip" data-v="${v}">${t}</button>`).join('')}
+          <label class="chip" style="cursor:pointer;border-style:dashed;">
+            + 上传多视角图
+            <input type="file" id="extraAngleFiles" accept="image/*" multiple style="display:none;">
+          </label>
+        </div>
       </div>
-    </div>
-    <div class="opt">
-      <div class="opt-label">一句话卖点<span class="opt-hint">写你自己的说法最好</span></div>
-      <div class="opt-row"><input class="in wide" id="briefSelling" placeholder="实木手工、老料新做…"></div>
-    </div>
-    <div class="opt">
-      <div class="opt-label">市场客单价</div>
-      <div class="opt-row" data-k="price">
-        <button type="button" class="chip" data-v="low">低</button>
-        <button type="button" class="chip on" data-v="mid">中</button>
-        <button type="button" class="chip" data-v="high">高</button>
+
+      <div class="opt">
+        <div class="opt-label">3. 是否需要真人模特出镜<span class="opt-hint">服饰/美妆/穿戴类推荐开启</span></div>
+        <div class="opt-row" data-k="model">
+          <button type="button" class="chip${st.model === 'no' ? ' on' : ''}" data-v="no">不用模特（纯产品）</button>
+          <button type="button" class="chip${st.model === 'yes' ? ' on' : ''}" data-v="yes">需要匹配客群的模特</button>
+        </div>
       </div>
-    </div>
-    <div class="ask-foot">
-      <button type="button" class="link" data-act="skip">先出图，回头再说</button>
-      <button type="button" class="btn-primary" data-act="go">存下来并备料</button>
+
+      <div class="opt">
+        <div class="opt-label">4. 确认/补充核心卖点（最多 3 条）<span class="opt-hint">留空则沿用分析提炼</span></div>
+        <div class="opt-row">
+          <input class="in wide" id="briefSelling" value="${esc((analysis?.selling_points || []).join('、'))}" placeholder="例如：主动降噪、40小时续航、航空级铝合金">
+        </div>
+      </div>
+
+      <div class="ask-foot">
+        <button type="button" class="link" data-act="cancel">暂不生成</button>
+        <button type="button" class="btn-primary" data-act="go">锁定素材库并开始制作</button>
+      </div>
     </div>
   `, { persist: false });
 
-  const st = { angles: [], usage: 'main', model: 'no', price: 'mid' };
   const bubble = el.querySelector('.bubble');
-  const selling = el.querySelector('#briefSelling');
+  const sellingInput = el.querySelector('#briefSelling');
+  const extraInput = el.querySelector('#extraAngleFiles');
+  const extraHint = el.querySelector('#extraAngleHint');
+
+  extraInput?.addEventListener('change', async (ev) => {
+    const files = [...(ev.target.files || [])].slice(0, 6);
+    if (!files.length) return;
+    extraHint.textContent = '正在上传多视角实拍图…';
+    try {
+      for (const f of files) {
+        await uploadFile(f, { kind: 'angle_real' });
+        st.extraUploads += 1;
+      }
+      if (state.current) state.current = await api(`/api/products/${state.current.id}`);
+      renderWarehouse();
+      extraHint.textContent = `已入库 ${st.extraUploads} 张实拍视角图（100% 还原复用）`;
+    } catch (err) {
+      extraHint.textContent = `上传失败：${err.message}`;
+    }
+    ev.target.value = '';
+  });
 
   return new Promise((resolve) => {
     let done = false;
     const finish = (ok) => {
       if (done) return;
       done = true;
-      const brief = ok ? { ...st, selling: selling.value.trim(), askedAt: new Date().toISOString() } : { askedAt: new Date().toISOString() };
-      bubble.innerHTML = `<p class="ask-done">${ok ? '记下了。正在精修和出三视图…' : '好，先出图。素材回头再补也行。'}</p>`;
+      if (!ok) {
+        el.remove();
+        resolve(null);
+        return;
+      }
+      const sellingList = sellingInput.value
+        .split(/[、,，;；\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      const brief = {
+        angles: st.angles,
+        usage: st.mode,
+        model: st.model,
+        selling: sellingList.join('、'),
+        sellingPoints: sellingList,
+        extraUploads: st.extraUploads,
+        askedAt: new Date().toISOString(),
+      };
+      const modeName = DELIVERABLE_OPTIONS.find((x) => x[0] === st.mode)?.[1] || st.mode;
+      bubble.innerHTML = `<p class="ask-done">已确认：交付【${esc(modeName)}】 · 模特【${st.model === 'yes' ? '需要' : '不用'}】${st.extraUploads ? ` · 已补充 ${st.extraUploads} 张实拍视角` : ''}。正在锁定基底素材并制作…</p>`;
       patchHistory(bubble.innerHTML);
-      resolve(brief);
+      resolve({ mode: st.mode, brief, sellingPoints: sellingList, needModel: st.model === 'yes' });
     };
+
     el.addEventListener('click', (ev) => {
       const chip = ev.target.closest('.chip');
-      if (chip) {
+      if (chip && chip.dataset.v) {
         const k = chip.closest('.opt-row').dataset.k;
         if (k === 'angles') {
           chip.classList.toggle('on');
@@ -1066,88 +1000,164 @@ function askBrief({ title, thumb }) {
   });
 }
 
-/** 存 brief → 跑备料任务（精修 2 + 三视图 3 + 视觉规范） */
+/** 阶段一纯文本分析任务（不生图） */
+async function runStageOneAnalyze(askText) {
+  const pid = state.current.id;
+  const prog = progressBubble('正在进行产品商业分析与纯文本主视觉定调…');
+  try {
+    const { jobId } = await api('/api/jobs', {
+      method: 'POST',
+      body: {
+        type: 'analyze',
+        productId: pid,
+        params: {
+          platform: state.platform,
+          lang: state.lang || 'en',
+          brief: { selling: askText || '' },
+        },
+      },
+    });
+    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, '分析中'));
+    prog.done();
+    state.current = await api(`/api/products/${pid}`);
+    return res;
+  } catch (e) {
+    prog.done();
+    throw e;
+  }
+}
+
+/** 阶段二第一步：建立并持久化锁定「精修底图 + 一致性视角」双素材库 */
 async function runPrepare(brief, opts = {}) {
   if (!state.current) return null;
   const inner = $('#chat .chat-inner');
   const pid = state.current.id;
   const silent = !!opts.silent;
   try {
-    if (brief) await api(`/api/products/${pid}`, { method: 'PATCH', body: { brief } });
-    const prog = silent ? progressBubble('后台备料中…') : progressBubble('正在备料：精修 → 三视图 → 视觉规范', { loader: true });
+    if (brief) {
+      await api(`/api/products/${pid}`, {
+        method: 'PATCH',
+        body: {
+          brief,
+          ...(brief.sellingPoints?.length ? { sellingPoints: brief.sellingPoints } : {}),
+        },
+      });
+    }
+    const prog = silent
+      ? progressBubble('正在锁定产品精修底图与一致性视角素材（后台）…')
+      : progressBubble('正在生成产品精修图与一致性多视角基准…', { loader: true });
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
-      body: { type: 'visual', productId: pid, params: { platform: state.platform, brief: brief || {}, realAngles: brief?.angles || [] } },
+      body: {
+        type: 'visual',
+        productId: pid,
+        params: {
+          platform: state.platform,
+          brief: brief || {},
+          realAngles: brief?.angles || [],
+        },
+      },
     });
-    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, job.type));
+    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, '精修锁形'));
     prog.done();
     await selectProduct(pid, { keepChat: true });
-    if (silent) {
-      // 精修与三视图只当幕后素材，不当作成品展示
-      say(inner, 'ai', '<p class="muted-sm">素材已备好（后台），出图时会拿它当参考图。</p>', { persist: false });
-      return { silent: true };
-    }
-    const spec = res.spec || {};
+
     const all = state.current?.assets || [];
     const mine = (res.assets || []).map((id) => all.find((a) => a.id === id)).filter(Boolean);
-    const pal = spec.palette || {};
-    say(inner, 'ai', `
-      <p>素材备好了 ${mine.length} 张，放在仓库的「基底素材」里。</p>
-      <p class="muted-sm">${esc(spec.category || '')}${spec.category ? ' · ' : ''}${esc(spec.lighting || '')}</p>
-      ${pal.base ? `<div class="spec">${['base', 'accent', 'support'].map((k) => (pal[k] ? `<span class="sw" style="background:${pal[k]}" title="${k} ${pal[k]}"></span>` : '')).join('')}<span class="spec-t">视觉规范 v${spec.version || 1}</span></div>` : ''}
-    `);
-    if (mine.length) shots(inner.lastElementChild, mine);
+    if (silent) {
+      say(inner, 'ai', `<p class="muted-sm">已锁定 ${mine.length} 张精修与视角基底素材（存入仓库「锁定基底素材库」，后续全程复用）。</p>`, { persist: false });
+      return res;
+    }
+    // 用户明确要的就是「产品精修图」时，直接展示精修成图
+    const refinedOnly = mine.filter((a) => a.kind === 'refined');
+    const displayList = refinedOnly.length ? refinedOnly : mine;
+    const bubble = say(inner, 'ai', `<p>产品精修图已生成（共 ${displayList.length} 张），并已锁定至当前商品基底素材库供后续复用。</p>`);
+    if (displayList.length) shots(bubble.querySelector('.bubble'), displayList);
     return res;
   } catch (e) {
-    say(inner, 'ai', `<p>备料没跑通：${esc(e.message)}</p><p class="muted-sm">不影响出图，可以直接说要求。</p>`);
+    say(inner, 'ai', `<p class="err">基底素材生成失败：${esc(e.message)}</p>`);
     return null;
   }
 }
 
-async function doImage(askText, opts) {
+/* ---------------- 阶段二第二步：按指定模式精准出图 ---------------- */
+
+async function doImage(askText, opts = {}) {
   const text = String(askText || '').trim();
-  if (!state.current && !text && !state.lastUpload) {
-    say($('#chat .chat-inner'), 'ai', '<p>先发张图，或者直接说要做什么，比如「新建商品：老榆木餐桌」。</p>');
-    return;
+  const tpl = opts.template || detectDeliverableMode(text);
+
+  // 详情页模式严格走 6 屏详情页专用管线，绝不走单图通道
+  if (tpl === 'detail') {
+    return doDetail(text, opts);
   }
+  // 精修图模式严格走精修锁定管线
+  if (tpl === 'refine') {
+    return runPrepare(opts.brief || state.current?.brief || {}, { silent: false });
+  }
+
   await ensureProduct(text, state.lastUploadName);
   const inner = $('#chat .chat-inner');
   const before = new Set((state.current.assets || []).map((a) => a.id));
-  const tpl = opts?.template || $('#template').value;
   const lang = state.lang || 'en';
   const platformId = state.platform;
-  const count = opts?.count || (tpl === 'detail' ? 3 : 2);
-  const width = opts?.width || null;
-  const height = opts?.height || null;
-  const quality = opts?.quality || '1k';
-  const scale = { '1k': 1, '2k': 1.5, '4k': 2 }[quality] || 1;
-  const base = pf(platformId);
-  const outW = Math.round((width || base.w) * scale);
-  const outH = Math.round((height || base.h) * scale);
+  const count = opts.count || 2;
+  const width = opts.width || null;
+  const height = opts.height || null;
+  const quality = opts.quality || '1k';
+  const needModel = Boolean(opts.needModel ?? (state.current?.brief?.model === 'yes'));
 
-  const thumb = state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : '';
-  if (!opts?.silent) {
-    say(
-      inner,
-      'user',
-      `${askText ? `<p>${esc(askText)}</p>` : ''}${thumb}<p class="meta-line">${esc(base.name)} · ${tplLabel(tpl)} · ${langLabel(lang)} · ${count} 张 · ${outW}×${outH} · ${quality.toUpperCase()}</p>`
-    );
-  }
-
-  const box = progressBubble('正在出图…');
+  const box = progressBubble(`正在生成【${tplLabel(tpl)}】（严格锁定精修底图与主视觉规范）…`);
   try {
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
-      body: { type: 'image', productId: state.current.id, params: { assetId: state.lastUpload, platform: platformId, template: tpl, lang, count, width, height, quality, prompt: askText || undefined } },
+      body: {
+        type: 'image',
+        productId: state.current.id,
+        params: {
+          assetId: state.lastUpload,
+          platform: platformId,
+          template: tpl,
+          lang,
+          count,
+          width,
+          height,
+          quality,
+          needModel,
+          prompt: text || undefined,
+        },
+      },
     });
-    const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
     state.current = await api(`/api/products/${state.current.id}`);
-    const fresh = (state.current.assets || []).filter((a) => a.kind !== 'upload' && a.kind !== 'copy' && !before.has(a.id));
-    const bubble = say(inner, 'ai', `<p>${fresh.length ? `出好了 ${fresh.length} 张，已放进仓库。` : '任务完成。'}</p>`);
+    const fresh = (state.current.assets || []).filter(
+      (a) => !a.deletedAt && !['upload', 'copy', 'refined', 'angle', 'angle_real'].includes(a.kind) && !before.has(a.id)
+    );
+    const bubble = say(inner, 'ai', `<p>${fresh.length ? `【${tplLabel(tpl)}】已生成 ${fresh.length} 张，已同步存入仓库。` : '任务完成。'}</p>`);
     if (fresh.length) shots(bubble.querySelector('.bubble'), fresh);
+
+    // 营销海报交付后，主动提供「手机版样式」与「品牌线下/包装样机」延伸入口
+    if (tpl === 'marketing' && fresh.length) {
+      say(
+        inner,
+        'ai',
+        `<p class="muted-sm">需要基于同一套主视觉继续延伸线下或移动端物料吗？点一下直接生成：</p>
+         <div class="tiles">
+           <button class="tile" type="button" data-quick-mode="marketing_mobile">
+             <span class="tile-t">生成手机版海报（9:16）</span>
+             <span class="tile-d">保持内容与主视觉一致，适配移动端竖屏安全区</span>
+           </button>
+           <button class="tile" type="button" data-quick-mode="mockup">
+             <span class="tile-t">生成品牌商业样机</span>
+             <span class="tile-d">手机界面、产品包装、户外广告牌、线下展架与橱窗展示</span>
+           </button>
+         </div>`,
+        { persist: false }
+      );
+    }
+
     refreshMeta();
-    if (state.whTab === 'image') renderWarehouse(); else renderWarehouse();
+    renderWarehouse();
     state.lastUpload = null;
     state.lastUploadPreview = null;
     state.uploads = [];
@@ -1220,12 +1230,22 @@ async function doCopy() {
   }
 }
 
-const tplLabel = (t) => ({ main: '主图', marketing: '营销图', detail: '详情页' }[t] || t);
-const langLabel = (l) => ({ en: '英语', th: '泰语', vi: '越南语', zh: '中文', ar: '阿拉伯语' }[l] || l);
+const tplLabel = (t) =>
+  ({
+    refine: '产品精修图',
+    refined: '产品精修图',
+    display: '产品展示图',
+    main: '电商主图',
+    marketing: '营销海报',
+    mockup: '品牌样机',
+    detail: '详情页套图',
+  }[t] || t);
+
+const langLabel = (l) => langName(l);
+
 
 /* ---------------- GEO 内容资产 ---------------- */
 
-// 没选中商品时：只有一个就自动用它，一个都没有就新建，多个就让用户先挑
 async function ensureTarget(askText) {
   if (state.current) return true;
   try {
@@ -1282,32 +1302,41 @@ async function doGeo(askText) {
   }
 }
 
-/* ---------------- 详情页六段 ---------------- */
+/* ---------------- 详情页套图（完整 6 屏：品牌认知→核心卖点→产品细节→功能展示→使用场景→购买理由） ---------------- */
 
-async function doDetail(askText) {
+async function doDetail(askText, opts = {}) {
   const inner0 = $('#chat .chat-inner');
   if (!(await ensureTarget(askText))) {
-    say(inner0, 'ai', '<p>先选一个商品：顶栏下拉里挑一个，再说「出详情页」。</p>');
+    say(inner0, 'ai', '<p>请先上传产品图或从顶栏选择一个商品，再生成详情页套图。</p>');
     return;
   }
   const inner = $('#chat .chat-inner');
-  // 没有基底素材就先在后台备一份（不展示精修图），避免纯文生图跑偏
   if (!whAssets().base.length) {
-    say(inner, 'ai', '<p class="muted-sm">先把这张图的素材备一下（后台），接着出六段。</p>', { persist: false });
     await runPrepare(null, { silent: true });
   }
-  say(inner, 'user', `<p>${esc(askText || '出详情页')}</p><p class="meta-line">详情页 · 六段 · ${esc(pf(state.platform).name)}</p>`);
-  const box = progressBubble('正在排六段详情页…');
+  if (!opts.silent) {
+    say(inner, 'user', `<p>${esc(askText || '生成详情页套图（6屏）')}</p><p class="meta-line">详情页套图 · 6 屏完整结构 · ${esc(pf(state.platform).name)}</p>`);
+  }
+  const needModel = Boolean(opts.needModel ?? (state.current?.brief?.model === 'yes'));
+  const box = progressBubble('正在按 6 屏结构生成详情页套图（品牌→卖点→细节→功能→场景→购买理由）…');
   try {
     const { jobId } = await api('/api/jobs', {
       method: 'POST',
-      body: { type: 'detail', productId: state.current.id, params: { platform: state.platform, lang: state.lang || 'en' } },
+      body: {
+        type: 'detail',
+        productId: state.current.id,
+        params: {
+          platform: state.platform,
+          lang: state.lang || 'en',
+          needModel,
+        },
+      },
     });
     const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
     box.done();
     state.current = await api(`/api/products/${state.current.id}`);
     const bySeg = new Map((r.segments || []).map((s) => [s.index, s]));
-    const shots = (r.assets || [])
+    const shotsHtml = (r.assets || [])
       .map((id) => (state.current.assets || []).find((a) => a.id === id))
       .filter(Boolean)
       .map((a) => {
@@ -1318,11 +1347,14 @@ async function doDetail(askText) {
     const copies = (r.segments || [])
       .map((s) => `<li><b>${s.index}. ${esc(s.title)}</b><br><span style="white-space:pre-wrap">${esc(s.copy)}</span></li>`)
       .join('');
-    say(inner, 'ai', `
-      <p>六段出好了${r.errors?.length ? `（${r.errors.length} 段失败）` : ''}，文案在下面，图在仓库。</p>
-      <div class="shots many">${shots}</div>
-      <h3>每段文案</h3><ul>${copies}</ul>
+    const bubble = say(inner, 'ai', `
+      <p>6 屏详情页套图已生成${r.errors?.length ? `（${r.errors.length} 屏失败）` : ''}，已全部存入仓库（支持拖拽调整屏序）。</p>
+      <div class="shots many">${shotsHtml}</div>
+      <h3>各屏排版文案参考</h3><ul>${copies}</ul>
       <p class="muted-sm">${esc(r.note || '')}</p>`);
+    bubble.querySelectorAll('img[data-open]').forEach((img) => {
+      img.onclick = () => window.open(img.dataset.open, '_blank');
+    });
     refreshMeta();
     renderWarehouse();
   } catch (e) {
@@ -1415,8 +1447,8 @@ const ENDPOINTS = [
   ['GET', '/api/products', '商品列表（分页）'],
   ['GET', '/api/products/:id', '商品详情（assets 展开）'],
   ['PATCH', '/api/products/:id', '更新商品'],
-  ['POST', '/api/uploads', '上传素材（raw body）'],
-  ['POST', '/api/jobs', '建任务 image/copy/video'],
+  ['POST', '/api/uploads', '上传素材（原图/多视角实拍）'],
+  ['POST', '/api/jobs', '建任务 analyze/visual/image/detail/copy/video'],
   ['GET', '/api/jobs/:id', '查任务进度'],
   ['POST', '/api/ledger', '记一笔'],
   ['GET', '/api/ledger', '账目 + 汇总'],
@@ -1445,10 +1477,10 @@ async function pingAll() {
       results.push(`${path} → 失败`);
     }
   }
-  out.textContent = results.join('　');
+  out.textContent = results.join(' ');
 }
 
-/* ---------------- 事件 ---------------- */
+/* ---------------- 事件与两阶段核心调度 ---------------- */
 
 function switchTab(name) {
   const btn = $$('.tab').find((t) => t.dataset.tab === name);
@@ -1466,55 +1498,38 @@ $('#tabs').addEventListener('click', (ev) => {
 
 $('#prodSel').addEventListener('change', (ev) => { if (ev.target.value) selectProduct(ev.target.value); });
 
-// 上传后的一键流程：后台备料 → 主图 → （假生成时）详情六段
-async function runAutoFlow() {
-  if (!state.current) return;
-  const inner = $('#chat .chat-inner');
-  const n = (state.uploads || []).length || 1;
-  say(
-    inner,
-    'user',
-    `${state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : ''}<p class="meta-line">${n} 张图 · 一键出套图 · ${esc(pf(state.platform).name)}</p>`
-  );
-  if (!whAssets().base.length) await runPrepare(null, { silent: true });
-  await doImage('', { template: 'main', count: 2, quality: '2k', silent: true });
-  let meta = null;
-  try { meta = await api('/api/meta'); } catch { /* 拿不到就按真模型处理 */ }
-  const imageMocked = !meta || meta.providers?.mode === 'mock' || (meta.mockCaps || []).includes('IMAGE');
-  if (imageMocked) {
-    await doDetail('出详情页');
-  } else {
-    say(inner, 'ai', '<p class="muted-sm">主图出好了。要六段详情页说一句「出详情页」，我先省你的额度。</p>');
-  }
-}
-
+// 上传图片时只把文件稳妥入库并展示预览，绝不偷跑乱生图，等用户补充一句话并确认后再进入两阶段流程
 $('#file').onchange = async (ev) => {
   const files = [...(ev.target.files || [])].slice(0, 6);
   if (!files.length) return;
   try {
+    // 如果当前已有商品且已经有过产物，默认提示或由用户决定；未选商品时自动以文件名建立新商品
     await ensureProduct('', files[0].name);
     const done = [];
-    for (const file of files) {
-      const { assetId, url: fileUrl } = await uploadFile(file);
-      done.push({ id: assetId, name: file.name, url: fileUrl || `/files/${assetId}.png`, preview: URL.createObjectURL(file), size: file.size });
+    for (let idx = 0; idx < files.length; idx++) {
+      const file = files[idx];
+      const kind = idx === 0 && !whAssets().uploads.length ? 'upload' : 'angle_real';
+      const { assetId, url: fileUrl } = await uploadFile(file, { kind });
+      done.push({
+        id: assetId,
+        name: file.name,
+        url: fileUrl || `/files/${assetId}.png`,
+        preview: URL.createObjectURL(file),
+        size: file.size,
+      });
     }
     state.uploads = [...(state.uploads || []), ...done].slice(-6);
     const last = state.uploads[state.uploads.length - 1];
-    state.lastUpload = last.id;
+    state.lastUpload = done[0].id;
     state.lastUploadName = files[0].name;
-    state.lastUploadUrl = last.url;
-    state.lastUploadPreview = last.preview;
-    $('#attachInfo').textContent = state.uploads.length > 1
-      ? `已附 ${state.uploads.length} 张：${state.uploads.map((u) => u.name).join('、')}`
-      : `已附：${last.name}（${(last.size / 1024).toFixed(0)}KB）`;
-    // 第一次拿到图：后台备料（不展示精修过程），然后直接出一套——演示时不用再说话
-    const p = state.current;
-    if (p && !p.brief?.askedAt) {
-      api(`/api/products/${p.id}`, { method: 'PATCH', body: { brief: { askedAt: new Date().toISOString() } } }).catch(() => {});
-    }
-    if (!p || !whAssets().base.length || true) {
-      runAutoFlow();
-    }
+    state.lastUploadUrl = done[0].url;
+    state.lastUploadPreview = done[0].preview;
+    $('#attachInfo').textContent =
+      state.uploads.length > 1
+        ? `已附 ${state.uploads.length} 张（首图+多视角实拍）：${state.uploads.map((u) => u.name).join('、')}`
+        : `已附参考图：${done[0].name}（${(done[0].size / 1024).toFixed(0)}KB）—— 输入一句话需求后点击发送`;
+    state.current = await api(`/api/products/${state.current.id}`);
+    renderWarehouse();
   } catch (e) {
     alert(e.message);
   }
@@ -1522,55 +1537,128 @@ $('#file').onchange = async (ev) => {
 };
 
 $('#chat').addEventListener('click', (ev) => {
+  const quick = ev.target.closest('[data-quick-mode]');
+  if (quick) {
+    const qm = quick.dataset.quickMode;
+    if (qm === 'marketing_mobile') {
+      doImage('手机版竖屏营销海报', { template: 'marketing', count: 1, width: 1080, height: 1920 });
+    } else if (qm === 'mockup') {
+      doImage('品牌线下与移动端商业样机展示', { template: 'mockup', count: 2 });
+    }
+    return;
+  }
   const chip = ev.target.closest('.starter, .tile');
   if (!chip) return;
   if (chip.dataset.tab) {
     switchTab(chip.dataset.tab);
     return;
   }
-  // 点入口 = 直接开工；该问的参数（张数/尺寸/清晰度、素材五问）仍会先弹出来
   $('#ask').value = chip.dataset.fill || chip.textContent;
   $('#btnSend').click();
 });
 
+const CLIP_WORDS = /视频|短片|短视频|运镜|动起来|片头/;
+const IMAGE_ONLY = /主图|详情图|白底图|海报|套图|精修|展示图/;
+const GEO_WORDS = /会问什么|买家问题|买家会问|关键词|锚点|内容资产|GEO|AI 可见度|ai 可见度/i;
+const INQUIRY_WORDS = /询盘|回信|报价|买家来信|客户问|inquiry/i;
+const looksLikeInquiry = (t) =>
+  t.length > 120 &&
+  !/^[\u4e00-\u9fa5]/.test(t) &&
+  /(price|quote|quotation|pcs|moq|lead time|fob|cif|deposit|sample)/i.test(t);
+
+/**
+ * 两阶段视觉导演总入口：
+ * - 若当前商品尚未完成前置分析确认（!p.brief?.askedAt）：
+ *   先执行阶段一（8维商业分析 + 纯文本主视觉定调 + 弹窗向用户索要多视角与确认交付模式），用户确认后再锁定素材库并按需出图。
+ * - 若当前商品已完成前置确认且基底素材库已锁定：
+ *   直接复用当前产品的「精修底图 + 多视角库 + 主视觉规范」，立即生成本次点名的新交付物。
+ */
+async function runDirectorWorkflow(askText) {
+  const text = String(askText || '').trim();
+  if (!state.current && !text && !state.lastUpload) {
+    say($('#chat .chat-inner'), 'ai', '<p>请先在顶栏选定平台与语言，上传 1 张产品实拍图并输入一句话需求～</p>');
+    return;
+  }
+
+  await ensureProduct(text, state.lastUploadName);
+  const inner = $('#chat .chat-inner');
+  const detectedMode = detectDeliverableMode(text);
+  const thumb = state.lastUploadPreview ? `<img class="thumb" src="${state.lastUploadPreview}" alt="">` : '';
+
+  say(
+    inner,
+    'user',
+    `${text ? `<p>${esc(text)}</p>` : ''}${thumb}<p class="meta-line">${esc(pf(state.platform).name)} · ${esc(langName(state.lang || 'en'))} · 意向：${esc(tplLabel(detectedMode))}</p>`
+  );
+
+  const p = state.current;
+  const hasBaseAssets = whAssets().base.length > 0;
+  const alreadyConfirmed = Boolean(p?.brief?.askedAt);
+
+  // 同产品已确认且基底素材已锁定：直接复用素材库按需出图
+  if (alreadyConfirmed && hasBaseAssets) {
+    await doImage(text, { template: detectedMode, silent: true });
+    return;
+  }
+
+  // 阶段一：8 维商业分析 + 纯文本主视觉定调（不生图）→ 前置收口提问卡片
+  let analyzeRes;
+  try {
+    analyzeRes = await runStageOneAnalyze(text);
+  } catch (e) {
+    say(inner, 'ai', `<p class="err">商业分析阶段出错：${esc(e.message)}</p>`);
+    return;
+  }
+
+  const confirmed = await askDirectorBrief({
+    title: state.current.title,
+    thumb: state.lastUploadPreview,
+    analysis: analyzeRes.analysis,
+    spec: analyzeRes.spec,
+    initialMode: detectedMode,
+  });
+
+  if (!confirmed) return;
+
+  // 阶段二：锁定「精修底图 + 一致性视角」双素材库 → 按确认的模式精准交付
+  const prep = await runPrepare(confirmed.brief, { silent: confirmed.mode !== 'refine' });
+  if (!prep) return;
+
+  if (confirmed.mode === 'refine') {
+    // 用户要的就是精修图，runPrepare 已直接展示精修成图
+    state.lastUpload = null;
+    state.lastUploadPreview = null;
+    state.uploads = [];
+    $('#attachInfo').textContent = '未附图片';
+    return;
+  }
+
+  await doImage(text, {
+    template: confirmed.mode,
+    needModel: confirmed.needModel,
+    brief: confirmed.brief,
+    silent: true,
+  });
+}
+
 $('#btnSend').onclick = async () => {
   const ask = $('#ask').value.trim();
   $('#ask').value = '';
-  // 贴进来一整段买家来信 → 询盘解析
+
   if (looksLikeInquiry(ask) || (INQUIRY_WORDS.test(ask) && ask.length > 60)) {
     doInquiry(ask);
     return;
   }
-  // 「这批买家会问什么」「做关键词」→ GEO 内容资产
   if (GEO_WORDS.test(ask)) {
     doGeo(ask);
     return;
   }
-  // 详情页：一次出六段
-  if (DETAIL_WORDS.test(ask) && !/视频|短片/.test(ask)) {
-    doDetail(ask);
-    return;
-  }
-  // 先认「视频」：一句话里提到短片/运镜，就走 Seedance 出片
   if (CLIP_WORDS.test(ask) && !IMAGE_ONLY.test(ask)) {
     doClip(ask);
     return;
   }
-  // 有图，或者话里明显是在要图 → 话里已经说清的参数不再问，只补没说的
-  if (state.lastUpload || IMAGE_WORDS.test(ask) || !ask) {
-    const known = readIntent(ask);
-    const poster = /海报|poster/i.test(ask);
-    const opts = await askParams({
-      title: state.current ? state.current.title : '新商品',
-      thumb: state.lastUploadPreview,
-      ask,
-      known,
-    });
-    if (!opts) { $('#ask').value = ask; return; }
-    doImage(ask, poster ? { ...opts, template: 'marketing' } : opts);
-    return;
-  }
-  doImage(ask);
+
+  await runDirectorWorkflow(ask);
 };
 
 $('#ask').addEventListener('keydown', (ev) => {
@@ -1588,7 +1676,6 @@ $('#vfile').onchange = (ev) => {
   if (file.size > 80 * 1024 * 1024) $('#vMeta').textContent += ' · 超过 80MB，先裁短';
   ev.target.value = '';
 
-  // 顺手读一下时长，ASR 不给时间戳时用它兜底
   const el = document.createElement('video');
   el.preload = 'metadata';
   el.src = URL.createObjectURL(file);
@@ -1603,7 +1690,6 @@ $('#btnVideo').onclick = async () => {
   const out = $('#videoOut');
   out.innerHTML = '<p class="muted">上传视频…</p>';
   try {
-    // 先把文件传到服务端，识别时后端要拿到原始字节
     if (state.video && !state.videoUrl) {
       const res = await fetch(`/api/uploads?productId=${encodeURIComponent(state.current.id)}`, {
         method: 'POST',
@@ -1703,7 +1789,6 @@ document.addEventListener('keydown', (ev) => {
   }
 });
 
-/* 点击处的波纹：只给开关类控件，正文和图片不掺和 */
 function rippleAt(host, ev) {
   if (!host) return;
   const box = host.getBoundingClientRect();
@@ -1728,16 +1813,9 @@ function esc(s) {
   return String(s ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
 }
 
-/* ---------------- 启动 ---------------- */
-
 /* ---------------- 模型接入状态 ---------------- */
 
 const CAP_LABEL = { text: '文案', image: '出图', asr: '语音识别', video: '商品短视频' };
-const CAP_HINT = {
-  text: 'TEXT_BASE_URL / TEXT_API_KEY / TEXT_MODEL',
-  image: 'IMAGE_BASE_URL / IMAGE_API_KEY / IMAGE_MODEL',
-  asr: 'ASR_BASE_URL / ASR_API_KEY / ASR_MODEL',
-};
 
 async function loadMeta() {
   const box = $('#providers');
@@ -1796,7 +1874,6 @@ function paintTheme(t) {
   try { localStorage.setItem(THEME_KEY, t); } catch {}
 }
 
-/* 径向揭幕：用 View Transitions 做一圈从按钮扩散的换肤，整页只合成一层，不掉帧 */
 let theming = false;
 let pendingTheme = null;
 let desiredTheme = null;
@@ -1841,7 +1918,9 @@ function initTheme() {
     applyTheme(desiredTheme, ev.currentTarget);
   });
 }
+
 (async function boot() {
+  if (/static/.test(location.search)) document.documentElement.classList.add('static');
   initTheme();
   renderEndpoints();
   buildPlatformMenu();

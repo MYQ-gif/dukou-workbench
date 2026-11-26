@@ -10,4 +10,7 @@ data/
 Thumbs.db
 
 # 截图检查产物（本地保留，不提交）
-.taste-skill/round*/
+.taste-skill/round*/*.bak
+_*.png
+_dom*.html
+_probe*

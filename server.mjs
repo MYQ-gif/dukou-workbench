@@ -1,6 +1,5 @@
 // 集成层（主人负责）——路由 / 存储 / 静态服务 / 上传
 // 规矩：零依赖，只 import Node 内置模块 + 本地 lib。
-// 契约见 CONTRACT.md，任何字段改动先改契约再改代码。
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +23,6 @@ const MAX_UPLOAD = 15 * 1024 * 1024;
 const MAX_MEDIA = 80 * 1024 * 1024;
 const VERSION = '1.0.0';
 
-// 视频/音频上传的扩展名映射（前端 upload 用 File.type 作为 content-type）
 const MEDIA_EXT = {
   'video/mp4': 'mp4',
   'video/quicktime': 'mov',
@@ -159,7 +157,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204, {
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,x-filename,authorization',
+      'access-control-allow-headers': 'content-type,x-filename,x-asset-kind,authorization',
     });
     return res.end();
   }
@@ -246,7 +244,7 @@ const server = http.createServer(async (req, res) => {
 
       if (m === 'PATCH') {
         const body = await readJSON(req);
-        const allowed = ['title', 'category', 'platform', 'market', 'targetLangs', 'sellingPoints', 'rawText', 'status', 'brief', 'detailOrder'];
+        const allowed = ['title', 'category', 'platform', 'market', 'targetLangs', 'sellingPoints', 'rawText', 'status', 'brief', 'visualSpec', 'analysis', 'detailOrder'];
         for (const key of allowed) {
           if (key in body) product[key] = body[key];
         }
@@ -258,7 +256,7 @@ const server = http.createServer(async (req, res) => {
       return fail(res, 405, 'BAD_REQUEST', 'method not allowed');
     }
 
-    /* ---- 6. POST /api/uploads ---- */
+    /* ---- 6. POST /api/uploads（支持 kind=upload | angle_real 入库） ---- */
     if (m === 'POST' && p === '/api/uploads') {
       const contentType = String(req.headers['content-type'] || '');
       const isImage = /^image\//.test(contentType);
@@ -276,14 +274,17 @@ const server = http.createServer(async (req, res) => {
       fs.writeFileSync(path.join(UPLOAD_DIR, filename), buf);
 
       const productId = url.searchParams.get('productId') || null;
+      const reqKind = url.searchParams.get('kind') || req.headers['x-asset-kind'] || 'upload';
+      const kind = ['upload', 'angle_real'].includes(reqKind) ? reqKind : 'upload';
+      const angle = url.searchParams.get('angle') || null;
       const asset = {
         id: assetId,
         productId,
-        kind: 'upload',
+        kind,
         url: `/files/${filename}`,
         width,
         height,
-        meta: { bytes: buf.length, contentType },
+        meta: { bytes: buf.length, contentType, ...(angle ? { angle } : {}) },
         createdAt: nowISO(),
       };
       db.assets.push(asset);
@@ -296,7 +297,7 @@ const server = http.createServer(async (req, res) => {
         }
       }
       persist();
-      return send(res, 201, { assetId: asset.id, url: asset.url, width, height });
+      return send(res, 201, { assetId: asset.id, url: asset.url, kind: asset.kind, width, height });
     }
 
     /* ---- 6b. DELETE /api/assets/:id（软删，可撤销） ---- */
@@ -338,8 +339,8 @@ const server = http.createServer(async (req, res) => {
     if (m === 'POST' && p === '/api/jobs') {
       const body = await readJSON(req);
       const type = body.type;
-      if (!['image', 'video', 'copy', 'clip', 'visual', 'geo', 'inquiry', 'detail'].includes(type)) {
-        return fail(res, 400, 'BAD_REQUEST', 'type must be image|video|copy|clip|visual|geo|inquiry|detail');
+      if (!['image', 'video', 'copy', 'clip', 'visual', 'analyze', 'geo', 'inquiry', 'detail'].includes(type)) {
+        return fail(res, 400, 'BAD_REQUEST', 'type must be image|video|copy|clip|visual|analyze|geo|inquiry|detail');
       }
       if (!body.productId || !db.products.find((x) => x.id === body.productId)) {
         return fail(res, 400, 'BAD_REQUEST', 'productId is required and must exist');
