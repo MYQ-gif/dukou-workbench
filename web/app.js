@@ -1100,7 +1100,7 @@ async function doImage(askText, opts = {}) {
   const before = new Set((state.current.assets || []).map((a) => a.id));
   const lang = state.lang || 'en';
   const platformId = state.platform;
-  const count = opts.count || 2;
+  const count = opts.count || Number(($('#imgCount') || {}).value) || 2;
   const width = opts.width || null;
   const height = opts.height || null;
   const quality = opts.quality || '1k';
@@ -1162,6 +1162,7 @@ async function doImage(askText, opts = {}) {
     state.lastUploadPreview = null;
     state.uploads = [];
     $('#attachInfo').textContent = '未附图片';
+    renderTray();
   } catch (e) {
     box.done();
     say(inner, 'ai', `<p class="err">出图失败：${esc(e.message)}</p>`);
@@ -1530,6 +1531,7 @@ $('#file').onchange = async (ev) => {
         : `已附参考图：${done[0].name}（${(done[0].size / 1024).toFixed(0)}KB）—— 输入一句话需求后点击发送`;
     state.current = await api(`/api/products/${state.current.id}`);
     renderWarehouse();
+    renderTray();
   } catch (e) {
     alert(e.message);
   }
@@ -1939,3 +1941,60 @@ function initTheme() {
   await loadProducts();
   loadMeta();
 })();
+
+/* 附件托盘：多图可见、可单张移除 */
+function renderTray() {
+  const tray = $('#uploadTray');
+  if (!tray) return;
+  const ups = state.uploads || [];
+  if (!ups.length) {
+    tray.classList.add('hidden');
+    tray.innerHTML = '';
+    return;
+  }
+  tray.classList.remove('hidden');
+  tray.innerHTML = ups
+    .map(function (u, i) {
+      const label = (i === 0 ? '主参考' : '视角' + i) + ' · ' + (u.name || '');
+      const thumb = u.preview || u.url || '';
+      return '<span class="upload-pill" data-upload-id="' + u.id + '">' +
+        '<img src="' + thumb + '" alt="">' +
+        '<span>' + esc(label) + '</span>' +
+        '<button class="rm-up" type="button" aria-label="移除这张" data-rm="' + u.id + '">×</button>' +
+        '</span>';
+    })
+    .join('');
+}
+
+function dropUpload(id) {
+  const ups = (state.uploads || []).filter(function (u) { return u.id !== id; });
+  state.uploads = ups;
+  const first = ups[0];
+  state.lastUpload = first ? first.id : null;
+  state.lastUploadName = first ? first.name : null;
+  state.lastUploadUrl = first ? first.url : null;
+  state.lastUploadPreview = first ? first.preview : null;
+  $('#attachInfo').textContent = ups.length
+    ? '已附 ' + ups.length + ' 张：' + ups.map(function (u) { return u.name; }).join('、')
+    : '未附图片';
+  renderTray();
+}
+
+$('#uploadTray') && $('#uploadTray').addEventListener('click', function (ev) {
+  const rm = ev.target.closest('[data-rm]');
+  if (!rm) return;
+  dropUpload(rm.dataset.rm);
+});
+
+$('#template') && $('#template').addEventListener('change', function () {
+  const sel = $('#template');
+  const cnt = $('#imgCount');
+  if (!sel || !cnt) return;
+  if (sel.value === 'detail') {
+    cnt.value = '6';
+    cnt.disabled = true;
+  } else {
+    cnt.disabled = false;
+    if (cnt.value === '6') cnt.value = '2';
+  }
+});

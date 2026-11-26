@@ -52,6 +52,7 @@
     <div id="chat" class="chat"></div>
 
     <div class="composer">
+      <div id="uploadTray" class="hidden"></div>
       <div class="composer-row">
         <label class="btn-attach">
           <input id="file" type="file" accept="image/*" multiple hidden>
@@ -74,6 +75,13 @@
           <option value="main">主图</option>
           <option value="marketing">营销图</option>
           <option value="detail">详情页</option>
+        </select>
+        <select id="imgCount" class="ctl" aria-label="张数">
+          <option value="1">1 张</option>
+          <option value="2" selected>2 张</option>
+          <option value="3">3 张</option>
+          <option value="4">4 张</option>
+          <option value="6">6 张</option>
         </select>
         <div class="pf-wrap">
           <button id="btnLang" class="ctl pf-btn" type="button" aria-haspopup="listbox" aria-expanded="false">

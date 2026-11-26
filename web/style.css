@@ -1353,3 +1353,27 @@ html[data-theme='dark'] .tile, html[data-theme='dark'] .stats { border-color: va
 html.static *, html.static *::before, html.static *::after {
   animation: none !important; transition: none !important; opacity: 1 !important; clip-path: none !important; transform: none !important;
 }
+
+/* 多图托盘 + 张数选择（Gemini 补丁新增的动态元素，之前没有样式） */
+#uploadTray {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 2px 8px;
+}
+#uploadTray.hidden { display: none; }
+.upload-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 6px 3px 3px; border: 1px solid var(--edge);
+  background: var(--sheet); font-size: 12px; max-width: 220px;
+}
+.upload-pill img { width: 28px; height: 28px; object-fit: cover; display: block; border: 1px solid var(--edge); }
+.upload-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-pill .rm-up {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 14px; line-height: 1; padding: 0 2px;
+}
+.upload-pill .rm-up:hover { color: var(--bad); }
+#imgCount {
+  height: 32px; border: 1px solid var(--edge); background: var(--sheet); color: var(--ink);
+  font-family: inherit; font-size: 13px; padding: 0 4px;
+}
+/* 输入框改成 textarea 后别撑破底栏 */
+#ask { resize: none; line-height: 1.45; max-height: 120px; }
