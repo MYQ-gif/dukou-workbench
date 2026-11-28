@@ -29,15 +29,18 @@
 ## 30 秒跑起来
 
 ```bash
-node --version     # 需要 ≥ 18
+node --version     # 需要 ≥ 20.12（代码用了 process.loadEnvFile）
 node server.mjs
-# 打开 http://localhost:8787
+# 打开 http://localhost:8790   （端口可用 PORT 环境变量改）
 
 # 想先看看有数据的样子（另开一个终端）：
 node scripts/seed-demo.mjs
+
+# 跑一遍后端自测（mock 模式，不花钱）：
+node --test test/
 ```
 
-不需要 `npm install`，不需要构建。
+不需要 `npm install`，不需要构建。仓库里的 `package.json` 只声明 engines 与脚本，**没有任何依赖**。
 
 ## 队友怎么跑
 
@@ -96,20 +99,35 @@ data/             运行时数据（db.json + uploads/），不进 git
 | GET | `/api/products` | 商品列表 |
 | GET | `/api/products/:id` | 商品详情 |
 | PATCH | `/api/products/:id` | 更新商品 |
-| POST | `/api/uploads` | 上传图片（raw body） |
-| POST | `/api/jobs` | 建任务 image/copy/video/clip/visual/geo/inquiry/detail |
-| GET | `/api/jobs/:id` | 查进度（前端 1.2s 轮询） |
+| POST | `/api/uploads` | 上传图片/视频（raw body，魔数校验） |
+| POST | `/api/jobs` | 建任务 analyze/image/copy/video/clip/visual/geo/inquiry/detail |
+| GET | `/api/jobs` | 任务列表（按商品/状态过滤） |
+| GET | `/api/jobs/:id` | 查进度（前端 1000ms 轮询） |
+| DELETE | `/api/jobs/:id` | 取消任务 |
+| DELETE | `/api/assets/:id` | 软删资产 |
+| POST | `/api/assets/:id/restore` | 撤销软删 |
 | POST | `/api/ledger` | 记一笔 |
-| GET | `/api/ledger` | 账目 + 汇总 |
-| GET | `/api/meta` | 三条链路配没配好、用的哪个模型 |
+| GET | `/api/ledger` | 账目 + 汇总（含 `byCurrency` 分币种） |
+| GET | `/api/meta` | 链路状态、市场列表、当日用量 |
 | POST | `/api/meta/check` | 单链路自检（`{cap:"TEXT"}`） |
 
-细节字段见 [`CONTRACT.md`](CONTRACT.md)。
+细节字段见 [`CONTRACT.md`](CONTRACT.md)（已升到 v2）。
+
+## 安全与额度护栏
+
+局域网/公网演示前必看：
+
+- 写接口按 IP 滑动窗口限流，超限返回 `429 RATE_LIMITED` + `Retry-After`（本机回环默认豁免）
+- 真实模式（`AI_MOCK=0`）另有额度护栏：单次出图 ≤ 6 张、当日 ≤ 120 张、当日预估花费 ≤ ¥80
+- 阈值全部可用环境变量调整，清单见 CONTRACT.md 第 5 节
+- 当日用量随时可查：`GET /api/meta` 的 `usage` 字段
+
+> 注意：v2 仍然**没有登录鉴权**。真要放公网，必须先加 Bearer token + 反向代理。
 
 ## 已知限制（demo 阶段）
 
 - 视频翻译只返回字幕样例，不出成片（48h 内不做 lip sync）
-- 存储是单文件 JSON，不支持并发写多人（比赛够用）
+- 存储是单文件 JSON（已做原子落盘，不会半写毁库），但仍不适合多人高并发写
 - 没有登录体系，作品集展示不做多租户
 
 ## 动效清单（都在真实交互上，不做装饰）

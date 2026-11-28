@@ -1,7 +1,8 @@
+const PORT = process.env.PORT || '8790';
 ﻿import fs from 'node:fs';
 const CDP='http://127.0.0.1:9334';
 const list=await (await fetch(`${CDP}/json/list`)).json();
-const page=list.find(t=>t.type==='page'&&/8787|localhost/.test(t.url));
+const page=list.find(t=>t.type==='page'&&new RegExp(PORT+'|localhost').test(t.url));
 if(!page){console.log('no page target');process.exit(0);}
 const ws=new WebSocket(page.webSocketDebuggerUrl);
 await new Promise(r=>ws.onopen=r);
@@ -13,7 +14,7 @@ ws.onmessage=e=>{const m=JSON.parse(e.data);
 const send=(method,params={})=>new Promise(res=>{const i=++id;pending.set(i,res);ws.send(JSON.stringify({id:i,method,params}));});
 const ev=async x=>(await send('Runtime.evaluate',{expression:x,awaitPromise:true,returnByValue:true})).result?.result?.value;
 await send('Runtime.enable');await send('Page.enable');
-await send('Page.navigate',{url:'http://localhost:8787/?t='+Date.now()});
+await send('Page.navigate',{url:`http://localhost:${PORT}/?t=`+Date.now()});
 await new Promise(r=>setTimeout(r,2500));
 for (const tab of ['video','ledger','api','image']) {
   await ev(`document.querySelector('.tab[data-tab="${tab}"]').click(); true`);

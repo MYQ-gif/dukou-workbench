@@ -3,12 +3,13 @@ REM Dukou workbench launcher - ASCII only on purpose (cmd codepage safety)
 setlocal
 cd /d "%~dp0"
 
-set PORT=8790
+REM Port: env PORT wins, otherwise 8790 (8787 is often taken by a local gateway)
+if "%PORT%"=="" set PORT=8790
 
 where node >nul 2>nul
 if errorlevel 1 (
   echo [dukou] node not found on PATH
-  echo [dukou] install Node 18+ or run: node server.mjs
+  echo [dukou] install Node 20.12+ or run: node server.mjs
   pause
   exit /b 1
 )

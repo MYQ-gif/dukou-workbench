@@ -1,6 +1,7 @@
+const PORT = process.env.PORT || '8790';
 ﻿// 自测：商品抽屉 + 搜索。
 // 用法：node scripts/pickcheck.mjs [截图路径]
-const BASE = process.env.BASE || 'http://localhost:8787';
+const BASE = process.env.BASE || `http://localhost:${PORT}`;
 const SHOT = process.argv[2] || 'docs/preview-picker.png';
 
 const api = async (path, init) => {
@@ -28,7 +29,7 @@ for (const title of NAMES) {
 console.log('made', made.length, 'products');
 
 const tl = await (await fetch('http://127.0.0.1:9334/json/list')).json();
-const page = tl.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = tl.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 if (!page) throw new Error('没找到页面');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));

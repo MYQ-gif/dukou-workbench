@@ -70,14 +70,14 @@ gemini
 cd C:\Users\20708\Documents\deepseek-harness\default-workspace\dukou-workbench
 node server.mjs
 # 另开一个终端：
-curl.exe http://localhost:8787/api/health
+curl.exe http://localhost:8790/api/health
 node scripts/seed-demo.mjs
 git status --short
 git diff --stat
 ```
 
 人工检查：
-- 打开 http://localhost:8787 ，四个 tab（生图 / 视频翻译 / 记账 / 接口）都能点，控制台无红字。
+- 打开 http://localhost:8790 ，四个 tab（生图 / 视频翻译 / 记账 / 接口）都能点，控制台无红字。
 - 上传一张图 → 出套图 → 追问一句 → 仓库抽屉里能看到图。
 - 记一笔账 → 三张卡数字对得上。
 
@@ -115,7 +115,7 @@ git diff --stat
 
 ```
 先读 GEMINI.md 的「还没做完」。
-目标：把 8787 的服务放到公网，让我用手机能打开演示。
+目标：把 8790 的服务放到公网，让我用手机能打开演示。
 约束：零依赖不变；key 仍然只在 .env，不写进代码；给我一条命令能起/停。
 先给方案（平台、步骤、成本、风险），我选了再动手。
 ```

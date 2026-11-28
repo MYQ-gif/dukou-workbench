@@ -1,12 +1,13 @@
 // 多图上传 + 详情页不展示精修：UI 级自测（CDP）
 // 用法：node scripts/uploadcheck.mjs [截图前缀]
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-upload.png';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
-if (!page) throw new Error('没有找到 localhost:8787 的页面');
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
+if (!page) throw new Error('没有找到 localhost:${PORT} 的页面');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;
@@ -19,7 +20,7 @@ const send = (method, params = {}) => new Promise((res) => { const i = ++id; pen
 const ev = async (x) => (await send('Runtime.evaluate', { expression: x, awaitPromise: true, returnByValue: true })).result?.result?.value;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-await send('Page.navigate', { url: 'http://localhost:8787/' });
+await send('Page.navigate', { url: `http://localhost:${PORT}/` });
 await wait(2600);
 
 // 用工程里两张现成的 jpg 造 File，塞进 input

@@ -1,11 +1,12 @@
 // 用 CDP 拍一组真实操作截图：docshot 用（不参与运行）
 // 用法：node scripts/shots.mjs [outDir]
 import { readFileSync } from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const OUT = process.argv[2] || 'docs';
 const CDP = process.env.CDP || 'http://127.0.0.1:9334';
 
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /localhost:8787|127\.0\.0\.1:8787/.test(t.url)) || list.find((t) => t.type === 'page');
+const page = list.find((t) => t.type === 'page' && /localhost:${PORT}|127\\.0\\.0\\.1:${PORT}/.test(t.url)) || list.find((t) => t.type === 'page');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

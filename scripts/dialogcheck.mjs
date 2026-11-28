@@ -1,11 +1,12 @@
 // 自测「对话区里的出图提问卡」：说一句要图的话 → 卡片出现在聊天流里 → 选参数 → 规格正确
 // 用法：node scripts/dialogcheck.mjs docs/preview-ask.png
 import { writeFileSync } from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const CDP = process.env.CDP || 'http://127.0.0.1:9334';
 const OUT = process.argv[2] || '';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /localhost:8787/.test(t.url));
-if (!page) throw new Error('no page at localhost:8787');
+const page = list.find((t) => t.type === 'page' && new RegExp('localhost:'+PORT).test(t.url));
+if (!page) throw new Error('no page at localhost:${PORT}');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

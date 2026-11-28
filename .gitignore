@@ -14,3 +14,19 @@ Thumbs.db
 _*.png
 _dom*.html
 _probe*
+
+# 编辑过程留下的备份副本：本地保留，不进仓库（接手的人容易读错文件）
+*.bak
+*.bak.*
+*.pre-patch
+*.orig
+
+# node 依赖目录（本项目零依赖，这里只是防手滑）
+node_modules/
+
+# AI 工作台会话临时目录（本地产物，不进仓库）
+.box-agent/
+.box-agent-scratch/
+
+# 交接压缩包（按需本地生成，体积大，不进仓库）
+*.zip

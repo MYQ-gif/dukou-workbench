@@ -2,7 +2,8 @@
 // 用法：node scripts/seed-demo.mjs  （服务需先起来；会写进 data/db.json）
 // 提交演示前记得删掉 data/ 目录，别把假数据带上线。
 
-const BASE = process.env.BASE || 'http://localhost:8787';
+const PORT = process.env.PORT || '8790';
+const BASE = process.env.BASE || `http://localhost:${PORT}`;
 
 const DEMO = {
   title: '老榆木餐桌',
@@ -55,4 +56,4 @@ for (const entry of [
   console.log('ledger', entry.type, entry.amount, '→ 利润', summary.profit);
 }
 
-console.log('\n打开 http://localhost:8787 看效果');
+console.log('\n打开 http://localhost:${PORT} 看效果');

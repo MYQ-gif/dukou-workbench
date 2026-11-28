@@ -78,13 +78,13 @@ dukou-workbench/
 
 ```bash
 node --version          # 需要 ≥18
-node server.mjs         # 打开 http://localhost:8787
+node server.mjs         # 打开 http://localhost:8790
 ```
 
 环境变量（可选）：
 
 ```
-PORT=8787
+PORT=8790
 AI_MOCK=1               # 1=假数据，0=真调模型
 AI_BASE_URL=            # 模型网关地址
 AI_API_KEY=             # 只在本地 .env，不入库
@@ -100,6 +100,6 @@ AI_API_KEY=             # 只在本地 .env，不入库
 ## 9. AI 分工：Gemini 只出方案，落地由 DSH 执行（2026-11-26 定）
 
 - **Gemini / 其他助手**：只做设计、审查、给代码片段或整文件内容；不直接改本仓库。
-- **DSH（本机 Agent）**：负责把方案落到磁盘——写文件、`node --check`、清库/重启 8787、跑冒烟（analyze/visual/image/detail）、`?static=1` 截图核对、`git commit`。
+- **DSH（本机 Agent）**：负责把方案落到磁盘——写文件、`node --check`、清库/重启 8790、跑冒烟（analyze/visual/image/detail）、`?static=1` 截图核对、`git commit`。
 - 交接格式（最省事）：把 Gemini 的输出原样贴过来，并说明「整文件覆盖 / 只改某段 / 只改样式」。整文件覆盖时先做 `.bak`，改完立刻语法检查。
 - 覆盖后必做四步：`node --check` 全部改动文件 → 重启服务 → 冒烟至少一条 analyze + 一条 image → `git diff --stat` 复核。

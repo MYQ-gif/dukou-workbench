@@ -1,8 +1,9 @@
 // 自测：geo（内容资产）与 inquiry（询盘）两条链路。
 // 用法：node scripts/contentcheck.mjs [截图路径]
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 
-const BASE = process.env.BASE || 'http://localhost:8787';
+const BASE = process.env.BASE || `http://localhost:${PORT}`;
 const SHOT = process.argv[2] || 'docs/preview-inquiry.png';
 
 const api = async (path, init) => {
@@ -78,7 +79,7 @@ if (!Object.values(inq.result.reply || {}).some(Boolean)) throw new Error('inqui
 /* ---------- 截图（可选） ---------- */
 try {
   const list = await (await fetch('http://127.0.0.1:9334/json/list')).json();
-  const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
+  const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
   if (!page) throw new Error('没找到页面');
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((r) => (ws.onopen = r));

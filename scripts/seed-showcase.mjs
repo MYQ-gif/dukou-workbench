@@ -1,9 +1,10 @@
 // 生成一套「演示专用」数据：不调用任何生图 API——用一张公开照片 + 不同裁切 + SVG 排版，造出一整套成品图。
-// 用法：停掉 server（8787）→ node scripts/seed-showcase.mjs → 再启动 server
+// 用法：停掉 server（${PORT}）→ node scripts/seed-showcase.mjs → 再启动 server
 // 产物：data/uploads/*.svg（本地，不进 git）+ data/db.json 里的 demo 商品
 
 import fs from 'node:fs';
 import path from 'node:path';
+const PORT = process.env.PORT || '8790';
 
 const ROOT = process.cwd();
 const UPLOADS = path.join(ROOT, 'data', 'uploads');
@@ -233,4 +234,4 @@ fs.writeFileSync(DB, JSON.stringify(db, null, 2));
 console.log('\n演示商品：', pid, '（黑色头戴式蓝牙耳机）');
 console.log('资产：1 原图 + 2 主图 + 6 详情 =', assets.length, '张');
 console.log('账目 3 条：128.5 - 30 - 18 → 利润 80.5');
-console.log('重启 server 后打开 http://localhost:8787');
+console.log('重启 server 后打开 http://localhost:${PORT}');

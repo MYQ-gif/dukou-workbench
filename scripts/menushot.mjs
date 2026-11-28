@@ -1,7 +1,8 @@
+const PORT = process.env.PORT || '8790';
 ﻿import fs from 'node:fs';
 const CDP='http://127.0.0.1:9334';
 const list=await (await fetch(`${CDP}/json/list`)).json();
-const page=list.find(t=>t.type==='page'&&/8787/.test(t.url));
+const page=list.find(t=>t.type==='page'&&new RegExp(String(PORT)).test(t.url));
 const ws=new WebSocket(page.webSocketDebuggerUrl);
 await new Promise(r=>ws.onopen=r);
 let id=0;const pending=new Map();
@@ -10,7 +11,7 @@ const send=(method,params={})=>new Promise(res=>{const i=++id;pending.set(i,res)
 const ev=async x=>(await send('Runtime.evaluate',{expression:x,awaitPromise:true,returnByValue:true})).result?.result?.value;
 const shot=async f=>{const r=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(f,Buffer.from(r.result.data,'base64'));console.log('saved',f);};
 await send('Network.setCacheDisabled',{cacheDisabled:true});
-await send('Page.navigate',{url:'http://localhost:8787/?v='+Date.now()});
+await send('Page.navigate',{url:`http://localhost:${PORT}/?v=`+Date.now()});
 await new Promise(r=>setTimeout(r,2800));
 await ev(`localStorage.setItem('dukou:theme','light'); location.reload(); true`);
 await new Promise(r=>setTimeout(r,2600));

@@ -1,9 +1,10 @@
 // 自测：上传第一张图 → 弹补素材卡 → 存 brief → 跑备料（visual）→ 仓库出现基底素材
 import { writeFileSync } from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const CDP = process.env.CDP || 'http://127.0.0.1:9334';
 const OUT = process.argv[2] || '';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /localhost:8787/.test(t.url));
+const page = list.find((t) => t.type === 'page' && new RegExp('localhost:'+PORT).test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

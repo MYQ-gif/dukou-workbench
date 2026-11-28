@@ -1,12 +1,13 @@
 // 验证「丢一张图 → 自动出一套」：用 CDP 给 file input 塞文件，等流程跑完截图
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 
 const CDP = 'http://127.0.0.1:9334';
 const photo = process.argv[2] || 'demo/01-headphones.jpg';
 const out = process.argv[3] || 'docs/preview-auto.png';
 
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url)) || list.find((t) => t.type === 'page');
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url)) || list.find((t) => t.type === 'page');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0; const pending = new Map();
@@ -19,7 +20,7 @@ await send('DOM.enable');
 await send('Network.enable');
 await send('Network.setCacheDisabled', { cacheDisabled: true });
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-await send('Page.navigate', { url: `http://localhost:8787/?v=${Date.now()}` });
+await send('Page.navigate', { url: `http://localhost:${PORT}/?v=${Date.now()}` });
 await new Promise((r) => setTimeout(r, 2500));
 
 const { result: { root } } = await send('DOM.getDocument', { depth: -1 });

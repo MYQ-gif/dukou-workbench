@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const CDP = 'http://127.0.0.1:9334';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;
@@ -21,7 +22,7 @@ const shot = async (f) => {
 
 await send('Network.enable');
 await send('Network.setCacheDisabled', { cacheDisabled: true });
-await send('Page.navigate', { url: 'http://localhost:8787/?v=' + Date.now() });
+await send('Page.navigate', { url: `http://localhost:${PORT}/?v=` + Date.now() });
 await wait(2500);
 await ev("localStorage.setItem('dukou:theme','light'); location.reload(); true");
 await wait(2600);

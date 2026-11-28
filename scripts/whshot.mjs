@@ -1,9 +1,10 @@
 // 简化版：只做「选商品 → 开仓库 → 截图」，用于确认图真的出来了
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-auto.png';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url)) || list.find((t) => t.type === 'page');
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url)) || list.find((t) => t.type === 'page');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0; const pending = new Map();
@@ -11,7 +12,7 @@ ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.
 const send = (method, params = {}) => new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async (x) => (await send('Runtime.evaluate', { expression: x, awaitPromise: true, returnByValue: true })).result?.result?.value;
 await send('Page.enable'); await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true });
-await send('Page.navigate', { url: `http://localhost:8787/?v=${Date.now()}` });
+await send('Page.navigate', { url: `http://localhost:${PORT}/?v=${Date.now()}` });
 await new Promise((r) => setTimeout(r, 2500));
 console.log('products', await ev("document.querySelectorAll('#pdList .pd-item').length"));
 await ev(`(() => { const o=[...document.querySelectorAll('#prodSel option')].filter(o=>o.value); if(o.length){document.querySelector('#prodSel').value=o[o.length-1].value; document.querySelector('#prodSel').dispatchEvent(new Event('change'));} return !!o.length; })()`);

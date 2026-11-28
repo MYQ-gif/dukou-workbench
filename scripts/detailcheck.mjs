@@ -1,6 +1,7 @@
 // 自测：type=detail 六段详情页。
 // 用法：node scripts/detailcheck.mjs [截图路径]
-const BASE = process.env.BASE || 'http://localhost:8787';
+const PORT = process.env.PORT || '8790';
+const BASE = process.env.BASE || `http://localhost:${PORT}`;
 const SHOT = process.argv[2] || 'docs/preview-detail.png';
 
 const api = async (path, init) => {
@@ -48,7 +49,7 @@ if (!list.every((a) => a.meta.copy)) throw new Error('有段落缺文案');
 /* 截图 */
 try {
   const tl = await (await fetch('http://127.0.0.1:9334/json/list')).json();
-  const page = tl.find((t) => t.type === 'page' && /8787/.test(t.url));
+  const page = tl.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((r) => (ws.onopen = r));
   let id = 0;

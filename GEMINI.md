@@ -19,7 +19,7 @@
 - 后端：**Node 原生 `http`，零依赖**（`server.mjs`）。禁止 express/koa/nest/lodash 等任何包。
 - 前端：**原生 HTML + CSS + ES Module JS**，无构建、无框架。
 - 存储：`data/db.json` 落盘，上传文件放 `data/uploads/`；`data/` 不进 git。
-- 端口：`8787`。启动：`node server.mjs`（不需要 `npm install`）。
+- 端口：`8790`。启动：`node server.mjs`（不需要 `npm install`）。
 - 假数据模式：默认 `AI_MOCK=1`，四条链路全走占位，先保证点得通。
 
 ## 当前状态（2026-11-26）
@@ -38,7 +38,7 @@
 **还没做完（按优先级）**：
 
 1. 真模型实测：`.env` 里 `VIDEO_API_KEY` 还没填，Seedance 短视频链路没实测过。
-2. 公网部署：现在只有本地 8787，路演要能用手机打开。
+2. 公网部署：现在只有本地 8790，路演要能用手机打开。
 3. 演示数据同步给队友（马/卓 本地还没有这套 demo）。
 4. 队内四件事：队名、第 4-5 人、P0 取舍、报名领 Token。
 5. 可选：5 分钟版 deck（现在有 10 页版）。
@@ -68,8 +68,8 @@
 ## 验收（每次改完自己跑一遍）
 
 ```bash
-node server.mjs                 # 起 8787，看有没有报错
-curl http://localhost:8787/api/health     # 期望 {"ok":true,...}
+node server.mjs                 # 起 8790，看有没有报错
+curl http://localhost:8790/api/health     # 期望 {"ok":true,...}
 node scripts/seed-demo.mjs      # 铺演示数据后四个 tab 都能点
 ```
 

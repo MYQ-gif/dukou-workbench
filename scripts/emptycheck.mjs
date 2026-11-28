@@ -1,7 +1,8 @@
 // 验证：初始不选商品；说话后自动建；下拉可切回已有商品
+const PORT = process.env.PORT || '8790';
 const CDP = 'http://127.0.0.1:9334';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 if (!page) throw new Error('no page target');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
@@ -22,7 +23,7 @@ const evalJs = async (expr) => {
 
 await send('Page.enable');
 await send('Runtime.enable');
-await send('Page.navigate', { url: 'http://localhost:8787/' });
+await send('Page.navigate', { url: `http://localhost:${PORT}/` });
 await new Promise((r) => setTimeout(r, 2500));
 
 const first = await evalJs(`(() => ({
@@ -57,7 +58,7 @@ console.log('afterAsk', JSON.stringify(afterAsk));
 console.log('afterCreate', JSON.stringify(afterCreate));
 
 // 刷新后应停在入口页，不自动选
-await send('Page.navigate', { url: 'http://localhost:8787/' });
+await send('Page.navigate', { url: `http://localhost:${PORT}/` });
 await new Promise((r) => setTimeout(r, 2500));
 const reload = await evalJs(`(() => ({
   title: document.querySelector('#hTitle').textContent,

@@ -47,7 +47,7 @@ ASR_MODEL=FunAudioLLM/SenseVoiceSmall
 node server.mjs
 ```
 
-浏览器打开 <http://localhost:8787> → 「接口」页 → 上面有「模型接入」三行：
+浏览器打开 <http://localhost:8790> → 「接口」页 → 上面有「模型接入」三行：
 
 - 绿色「已接」= 配好了，右边显示模型名和 base URL
 - 灰色「未配置」= 缺哪个变量直接写出来（照着补）

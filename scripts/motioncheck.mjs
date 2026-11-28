@@ -1,9 +1,10 @@
 // 动效自测：仓库多选 / 删除 / 波形 / 张数滑块 / 新消息揭示类
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-motion.png';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;
@@ -23,7 +24,7 @@ const shot = async (file) => {
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-await send('Page.navigate', { url: 'http://localhost:8787/' });
+await send('Page.navigate', { url: `http://localhost:${PORT}/` });
 await wait(2500);
 
 // 选一个已有商品

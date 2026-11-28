@@ -1,15 +1,16 @@
 // 空库自测：没有「新建商品」按钮，全靠对话框自动建
 import fs from 'node:fs';
+const APP_PORT = process.env.PORT || '8790';
 
 const PORT = 9334;
 const OUT = process.argv[2] || '.';
-const BASE = 'http://localhost:8787';
+const BASE = `http://localhost:${APP_PORT}`;
 
 async function target() {
   for (let i = 0; i < 60; i++) {
     try {
       const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
-      const p = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl && t.url.includes('localhost:8787'));
+      const p = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl && t.url.includes(`localhost:${APP_PORT}`));
       if (p) return p;
     } catch {}
     await new Promise((r) => setTimeout(r, 250));

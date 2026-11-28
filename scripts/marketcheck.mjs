@@ -1,7 +1,8 @@
 // 目标市场 + 四入口自检：市场下拉、四张卡片、点卡片直接开工、卡片不叠
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 
-const BASE = 'http://localhost:8787';
+const BASE = `http://localhost:${PORT}`;
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-market.png';
 
@@ -9,7 +10,7 @@ const meta = await (await fetch(`${BASE}/api/meta`)).json();
 console.log('markets:', meta.markets.length);
 
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

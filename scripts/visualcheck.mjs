@@ -1,5 +1,6 @@
 // 视觉备料自测：建商品 → 建 visual 任务 → 等完成 → 检查资产与 spec
-const BASE = 'http://localhost:8787';
+const PORT = process.env.PORT || '8790';
+const BASE = `http://localhost:${PORT}`;
 
 async function post(path, body) {
   const res = await fetch(BASE + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });

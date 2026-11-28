@@ -1,7 +1,8 @@
 ﻿// 自测：商品短视频（clip）——API 走一遍 mock 任务 + 界面里点一下入口卡片
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 
-const BASE = 'http://localhost:8787';
+const BASE = `http://localhost:${PORT}`;
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-clip.png';
 
@@ -33,7 +34,7 @@ console.log('clip job', job.status, JSON.stringify(job.result || job.error).slic
 
 // 3) 界面里点「出商品短视频」卡片 → 发送，看是否真出消息
 const list2 = await (await fetch(`${CDP}/json/list`)).json();
-const page = list2.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = list2.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

@@ -1,9 +1,10 @@
 // 排队兜底自测：把 __slowAfter 调到 1.2s，触发 clip，看文案是否切换、进度回来后是否还原
 import fs from 'node:fs';
+const PORT = process.env.PORT || '8790';
 const CDP = 'http://127.0.0.1:9334';
 const out = process.argv[2] || 'docs/preview-slow.png';
 const list = await (await fetch(`${CDP}/json/list`)).json();
-const page = list.find((t) => t.type === 'page' && /8787/.test(t.url));
+const page = list.find((t) => t.type === 'page' && new RegExp(String(PORT)).test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;
@@ -23,9 +24,9 @@ const shot = async (file) => {
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-const products = await (await fetch('http://localhost:8787/api/products')).json();
+const products = await (await fetch(`http://localhost:${PORT}/api/products`)).json();
 const pid = (products.items || [])[0]?.id;
-await send('Page.navigate', { url: `http://localhost:8787/?p=${pid}` });
+await send('Page.navigate', { url: `http://localhost:${PORT}/?p=${pid}` });
 await wait(2400);
 await evalJs(`(() => { const s = document.querySelector('#prodSel'); if (s) { s.value='${pid}'; s.dispatchEvent(new Event('change')); } return true; })()`);
 await wait(900);

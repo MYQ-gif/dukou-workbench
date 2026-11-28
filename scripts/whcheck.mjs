@@ -1,5 +1,6 @@
 // 仓库 + 平台选择 自测：连 CDP 真点按钮，截图存盘
 import fs from 'node:fs';
+const APP_PORT = process.env.PORT || '8790';
 
 const PORT = 9334;
 const OUT = process.argv[2] || '.';
@@ -9,7 +10,7 @@ async function targets() {
     try {
       const r = await fetch(`http://127.0.0.1:${PORT}/json/list`);
       const list = await r.json();
-      const page = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl && /localhost:8787/.test(t.url));
+      const page = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl && new RegExp('localhost:'+APP_PORT).test(t.url));
       if (page) return page;
     } catch {}
     await new Promise((r) => setTimeout(r, 250));

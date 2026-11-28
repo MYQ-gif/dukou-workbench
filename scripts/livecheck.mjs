@@ -1,5 +1,6 @@
 // 真链路冒烟：建商品 → 文案（TEXT）→ 出图（IMAGE）→ 打印耗时与产物
-const BASE = 'http://localhost:8787';
+const PORT = process.env.PORT || '8790';
+const BASE = `http://localhost:${PORT}`;
 
 async function post(path, body) {
   const res = await fetch(BASE + path, {

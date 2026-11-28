@@ -1,0 +1,17 @@
+{
+  "name": "dukou-workbench",
+  "version": "1.2.0",
+  "private": true,
+  "description": "渡口 · 出海工作台（零依赖 Node 服务 + 原生前端）",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/",
+    "seed": "node scripts/seed-demo.mjs",
+    "check": "node --check server.mjs && node --check lib/ai.mjs && node --check lib/jobs.mjs && node --check lib/store.mjs && node --check lib/ratelimit.mjs && node --check lib/ledger.mjs && node --check web/app.js"
+  }
+}

@@ -1,7 +1,8 @@
+const PORT = process.env.PORT || '8790';
 ﻿import fs from 'node:fs';
 const CDP='http://127.0.0.1:9334';
 const list=await (await fetch(`${CDP}/json/list`)).json();
-const page=list.find(t=>t.type==='page'&&/8787/.test(t.url));
+const page=list.find(t=>t.type==='page'&&new RegExp(String(PORT)).test(t.url));
 const ws=new WebSocket(page.webSocketDebuggerUrl);
 await new Promise(r=>ws.onopen=r);
 let id=0;const pending=new Map();
