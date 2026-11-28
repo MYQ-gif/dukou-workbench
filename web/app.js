@@ -35,6 +35,19 @@ const pf = (id) => PLATFORMS.find((p) => p.id === id) || PLATFORMS.find((p) => p
 
 /* ---------------- API ---------------- */
 
+function formatHttpError(res, data, fallback) {
+  const msg = data?.error?.message;
+  if (res.status === 429) {
+    const retry = res.headers.get('retry-after');
+    const wait = retry ? `，请 ${retry} 秒后再试` : '';
+    return msg ? `${msg}${wait}` : `请求过于频繁或已触达额度上限${wait}`;
+  }
+  if (res.status === 405) {
+    return `接口请求方式不允许（405）${msg ? `：${msg}` : '，请刷新页面重试'}`;
+  }
+  return msg || fallback || `HTTP ${res.status}`;
+}
+
 async function api(path, { method = 'GET', body, headers } = {}) {
   const res = await fetch(path, {
     method,
@@ -42,7 +55,12 @@ async function api(path, { method = 'GET', body, headers } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(formatHttpError(res, data));
+    err.status = res.status;
+    err.code = data?.error?.code;
+    throw err;
+  }
   return data;
 }
 
@@ -612,19 +630,19 @@ function chatReset() {
       'ai',
       `${opening}
        <div class="tiles">
-         <button class="tile" type="button" data-fill="帮我做一套完整的6屏详情页图片">
+         <button class="tile" type="button" data-starter="detail" data-fill="帮我做一套完整的6屏详情页图片。核心卖点：">
            <span class="tile-t">1. 详情页套图（6屏）</span>
            <span class="tile-d">品牌认知 → 核心卖点 → 产品细节 → 功能展示 → 使用场景 → 购买理由</span>
          </button>
-         <button class="tile" type="button" data-fill="出一张电商主图，突出核心卖点">
+         <button class="tile" type="button" data-starter="main" data-fill="出一张电商主图，突出核心卖点。核心卖点：">
            <span class="tile-t">2. 电商主图</span>
            <span class="tile-d">锁定原图主体，围绕单一核心卖点打造高点击主图</span>
          </button>
-         <button class="tile" type="button" data-fill="出一张产品展示图，突出材质与高级氛围感">
+         <button class="tile" type="button" data-starter="display" data-fill="出一张产品展示图，突出材质与高级氛围感。核心卖点：">
            <span class="tile-t">3. 产品展示图</span>
            <span class="tile-d">商业布景与自然光影融合，突出高级质感与克制留白</span>
          </button>
-         <button class="tile" type="button" data-fill="出一张营销海报，适配当前平台语言">
+         <button class="tile" type="button" data-starter="marketing" data-fill="出一张营销海报，适配当前平台语言。核心卖点：">
            <span class="tile-t">4. 营销海报 & 样机</span>
            <span class="tile-d">支持竖版/横版/方形海报，可延展手机版与包装/展架/广告牌样机</span>
          </button>
@@ -803,7 +821,7 @@ async function uploadFile(file, opts = {}) {
     body: buf,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || '上传失败');
+  if (!res.ok) throw new Error(formatHttpError(res, data, '上传失败'));
   return data;
 }
 
@@ -817,6 +835,7 @@ function jobPromise(jobId, onTick) {
         onTick?.(job);
         if (job.status === 'done') { clearInterval(timer); resolve(job.result); }
         else if (job.status === 'failed') { clearInterval(timer); reject(new Error(job.error?.message || '任务失败')); }
+        else if (job.status === 'cancelled') { clearInterval(timer); reject(new Error('任务已取消')); }
       } catch (e) { clearInterval(timer); reject(e); }
     }, 1000);
   });
@@ -1017,7 +1036,7 @@ async function runStageOneAnalyze(askText) {
         },
       },
     });
-    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, '分析中'));
+    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, job.stage || '分析中'));
     prog.done();
     state.current = await api(`/api/products/${pid}`);
     return res;
@@ -1058,12 +1077,12 @@ async function runPrepare(brief, opts = {}) {
         },
       },
     });
-    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, '精修锁形'));
+    const res = await jobPromise(jobId, (job) => prog.update(job.progress || 0, job.stage || '精修锁形'));
     prog.done();
     await selectProduct(pid, { keepChat: true });
 
     const all = state.current?.assets || [];
-    const mine = (res.assets || []).map((id) => all.find((a) => a.id === id)).filter(Boolean);
+    const mine = (res.assets || []).map((id) => all.find((a) => a.id === id && !a.deletedAt)).filter(Boolean);
     if (silent) {
       say(inner, 'ai', `<p class="muted-sm">已锁定 ${mine.length} 张精修与视角基底素材（存入仓库「锁定基底素材库」，后续全程复用）。</p>`, { persist: false });
       return res;
@@ -1127,7 +1146,7 @@ async function doImage(askText, opts = {}) {
         },
       },
     });
-    await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    await jobPromise(jobId, (job) => box.update(job.progress || 0, job.stage || job.status));
     box.done();
     state.current = await api(`/api/products/${state.current.id}`);
     const fresh = (state.current.assets || []).filter(
@@ -1190,7 +1209,7 @@ async function doClip(askText) {
         params: { prompt: text || undefined, duration: seconds, resolution: '720p', platform: state.platform, imageUrl: state.lastUploadUrl || null },
       },
     });
-    const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.stage || job.status));
     box.done();
     const bubble = say(inner, 'ai', '<p>视频好了。</p>');
     const body = bubble.querySelector('.bubble');
@@ -1216,7 +1235,7 @@ async function doCopy() {
   const box = progressBubble('正在写文案…');
   try {
     const { jobId } = await api('/api/jobs', { method: 'POST', body: { type: 'copy', productId: state.current.id, params: { lang: state.lang || 'en', platform: state.platform } } });
-    const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    const result = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.stage || job.status));
     box.done();
     say(inner, 'ai', `
       <h3>标题</h3><p>${esc(result.title || '')}</p>
@@ -1284,7 +1303,7 @@ async function doGeo(askText) {
         params: { platform: state.platform, lang: state.lang || 'en', brief: state.current.brief || {} },
       },
     });
-    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.stage || job.status));
     box.done();
     const qRows = (r.questions || []).slice(0, 10).map((q) => `<li><b>${esc(q.catName)}</b> · ${esc(q.q)}<span class="muted-sm">（${esc(q.where)}）</span></li>`).join('');
     const aRows = (r.anchors || []).map((a) => `<li>${esc(a.before)} → <b>${esc(a.after)}</b><span class="muted-sm">（${esc(a.why)}）</span></li>`).join('');
@@ -1333,12 +1352,12 @@ async function doDetail(askText, opts = {}) {
         },
       },
     });
-    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.stage || job.status));
     box.done();
     state.current = await api(`/api/products/${state.current.id}`);
     const bySeg = new Map((r.segments || []).map((s) => [s.index, s]));
     const shotsHtml = (r.assets || [])
-      .map((id) => (state.current.assets || []).find((a) => a.id === id))
+      .map((id) => (state.current.assets || []).find((a) => a.id === id && !a.deletedAt))
       .filter(Boolean)
       .map((a) => {
         const seg = bySeg.get(a.meta?.index) || {};
@@ -1381,7 +1400,7 @@ async function doInquiry(rawText) {
       method: 'POST',
       body: { type: 'inquiry', productId: state.current.id, params: { text, langs: ['en', 'zh'] } },
     });
-    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.status));
+    const r = await jobPromise(jobId, (job) => box.update(job.progress || 0, job.stage || job.status));
     box.done();
     const fields = (r.fields || []).map((f) => `<li>${esc(f.label)}：<b>${esc(f.value)}</b></li>`).join('');
     const risks = (r.risks || []).map((x) => `<li><span class="tag">${x.level === 'warn' ? '注意' : '提示'}</span> ${esc(x.text)}</li>`).join('');
@@ -1415,11 +1434,20 @@ async function loadLedger() {
     return;
   }
   const data = await api(`/api/ledger?productId=${state.current.id}`);
-  const s = data.summary;
-  $('#summary').innerHTML = `
-    <div class="stat"><div class="stat-label">收入</div><div class="stat-value">${money(s.income)}<span class="stat-unit">CNY</span></div></div>
-    <div class="stat"><div class="stat-label">成本</div><div class="stat-value cost">${money(s.cost)}<span class="stat-unit">CNY</span></div></div>
-    <div class="stat"><div class="stat-label">利润</div><div class="stat-value">${money(s.profit)}<span class="stat-unit">CNY</span></div></div>`;
+  const s = data.summary || {};
+  const byCur = s.byCurrency && Object.keys(s.byCurrency).length
+    ? s.byCurrency
+    : { [s.currency || 'CNY']: { income: s.income || 0, cost: s.cost || 0, profit: s.profit || 0 } };
+  const curEntries = Object.entries(byCur);
+  $('#summary').innerHTML = curEntries
+    .map(([cur, v]) => {
+      const tag = curEntries.length > 1 ? ` · ${esc(cur)}` : '';
+      return `
+        <div class="stat"><div class="stat-label">收入${tag}</div><div class="stat-value">${money(v.income)}<span class="stat-unit">${esc(cur)}</span></div></div>
+        <div class="stat"><div class="stat-label">成本${tag}</div><div class="stat-value cost">${money(v.cost)}<span class="stat-unit">${esc(cur)}</span></div></div>
+        <div class="stat"><div class="stat-label">利润${tag}</div><div class="stat-value">${money(v.profit)}<span class="stat-unit">${esc(cur)}</span></div></div>`;
+    })
+    .join('');
   const ul = $('#ledgerList');
   ul.innerHTML = '';
   if (!data.items.length) {
@@ -1551,6 +1579,7 @@ $('#chat').addEventListener('click', (ev) => {
   }
   const chip = ev.target.closest('.starter, .tile');
   if (!chip) return;
+  if (chip.dataset.starter) { selectStarter(chip); return; }
   if (chip.dataset.tab) {
     switchTab(chip.dataset.tab);
     return;
@@ -1699,7 +1728,7 @@ $('#btnVideo').onclick = async () => {
         body: state.video,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error?.message || '上传失败');
+      if (!res.ok) throw new Error(formatHttpError(res, data, '上传失败'));
       state.videoUrl = data.url;
     }
     out.innerHTML = '<p class="muted">转写 + 翻译中…（1 分钟视频约 40–90 秒）</p>';
@@ -1998,3 +2027,47 @@ $('#template') && $('#template').addEventListener('change', function () {
     if (cnt.value === '6') cnt.value = '2';
   }
 });
+
+/* 入口四卡：只联动底栏，绝不发送 */
+function injectStarterUI() {
+  if (document.getElementById('starterCss')) return;
+  const s = document.createElement('style');
+  s.id = 'starterCss';
+  s.textContent = [
+    '.tile.selected { outline: 3px solid currentColor; outline-offset: -3px; }',
+    '.btn-attach.pulse { animation: attachPulse .45s steps(2) 3; }',
+    '@keyframes attachPulse { 0%,100% { transform: none; } 50% { transform: scale(1.14); } }',
+  ].join('');
+  document.head.appendChild(s);
+}
+
+function selectStarter(chip) {
+  injectStarterUI();
+  const role = chip.dataset.starter;
+  const tplMap = { detail: 'detail', main: 'main', display: 'main', marketing: 'marketing' };
+  const sel = $('#template');
+  const cnt = $('#imgCount');
+  document.querySelectorAll('.tile[data-starter]').forEach(function (el) {
+    el.classList.toggle('selected', el === chip);
+  });
+  if (sel) sel.value = tplMap[role] || 'main';
+  if (cnt) {
+    cnt.disabled = role === 'detail';
+    cnt.value = role === 'detail' ? '6' : '2';
+  }
+  const ask = $('#ask');
+  if (ask) {
+    ask.value = chip.dataset.fill || '';
+    ask.focus();
+    try { ask.setSelectionRange(ask.value.length, ask.value.length); } catch {}
+  }
+  const hasImg = Boolean((state.uploads || []).length || state.lastUpload);
+  if (!hasImg) {
+    const label = document.querySelector('.btn-attach');
+    if (label) {
+      label.classList.remove('pulse');
+      void label.offsetWidth;
+      label.classList.add('pulse');
+    }
+  }
+}
